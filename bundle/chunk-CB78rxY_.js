@@ -1,12 +1,13 @@
 import { createRequire } from "node:module";
-import { aA as external_exports, aE as fail, aF as resolveRef, aG as ok, ay as getComponentSchema, aH as exposeActions, aC as getCatalog, aB as internalComponentTypeNote, aD as getLegacyComponentReplacement } from "./chunk-isfY25ah.js";
-import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, b as resolvePackSlot, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, g as lintComponentSpec, h as lintUnusableTextGeometry, j as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, n as lintRenderedGeometry, o as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, p as nearestCatalogKey, q as componentNameSchema, s as componentNameError, t as slotFindingKey, u as lintKanbanInteractions, v as lintShadKanbanCards, w as lintShadScheduleScale } from "./chunk-BzoTtK4L.js";
+import { e9 as resolveRef } from "./chunk-BhoYgPP_.js";
+import { aA as external_exports, aE as fail, aF as ok, ay as getComponentSchema, aG as exposeActions, aC as getCatalog, aB as internalComponentTypeNote, aD as getLegacyComponentReplacement } from "./chunk-B6ozJ2M5.js";
+import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, b as resolvePackSlot, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, g as lintComponentSpec, h as lintUnusableTextGeometry, j as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, n as lintRenderedGeometry, o as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, p as nearestCatalogKey, q as componentNameSchema, s as componentNameError, t as slotFindingKey, u as lintKanbanInteractions, v as lintShadKanbanCards, w as lintShadScheduleScale } from "./chunk-DfrPsyM8.js";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
-import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-CpwF2B9D.js";
+import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-O6Dwgt9j.js";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DuR3nfPV.js";
-import { A as retiredUi2Name, N as suggestedHtmlHeight } from "./chunk-Btd7hqFK.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-wRCgCKcA.js";
+import { A as retiredUi2Name, N as suggestedHtmlHeight } from "./chunk-D1B51Cza.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -332,7 +333,8 @@ function updateLayoutTool(client) {
   };
 }
 createRequire(import.meta.url);
-var name$1 = external_exports.string().regex(/^[A-Za-z_$][\w$]*$/);
+var workflowName = external_exports.string().min(1).refine((value) => value.trim().length > 0, "Name must not be blank.");
+var name$1 = workflowName;
 var conditionBranches = external_exports.array(external_exports.object({ id: external_exports.string().min(1), code: external_exports.string().min(1), label: external_exports.string() }).strict()).min(1);
 var elseBranch = external_exports.object({ enabled: external_exports.boolean(), label: external_exports.string().optional() }).strict();
 var workflowInputs = external_exports.array(external_exports.object({
@@ -344,9 +346,10 @@ var workflowInputs = external_exports.array(external_exports.object({
 }).strict()).superRefine((inputs, ctx) => {
   const keys = /* @__PURE__ */ new Set();
   inputs.forEach((input, i) => {
-    if (keys.has(input.key))
+    const canonicalKey = input.key.trim().toLowerCase();
+    if (keys.has(canonicalKey))
       ctx.addIssue({ code: "custom", path: [i, "key"], message: "Duplicate workflow input." });
-    keys.add(input.key);
+    keys.add(canonicalKey);
     const value = input.defaultValue;
     if (value === void 0)
       return;
@@ -373,6 +376,9 @@ function humanConfigurationErrors(data) {
     errors.push("Human approval requires named outcomes.");
   if (new Set(outcomes.map((outcome) => outcome.key)).size !== outcomes.length)
     errors.push("Human outcome keys must be unique.");
+  const fields = Array.isArray(data.inputSchema) ? data.inputSchema.map(record) : [];
+  if (fields.some((field) => typeof field.name !== "string" || !field.name.trim()) || new Set(fields.map((field) => field.name)).size !== fields.length)
+    errors.push("Human input field names must be nonblank and unique.");
   const timeout = record(data.timeout);
   if (timeout.enabled === true && !atLeastOneSecond(timeout.durationSeconds))
     errors.push("Human timeout must be at least one second.");
@@ -400,21 +406,24 @@ var agentModel = external_exports.object(query).strict();
 var nodeSchema = external_exports.discriminatedUnion("type", [
   external_exports.object({ ...base, type: external_exports.literal("start") }).strict(),
   external_exports.object({ ...base, type: external_exports.literal("javascript"), name: query.name, code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("query"), ...query }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().min(1), code: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("condition"), code: external_exports.string().min(1).optional(), conditions: conditionBranches.optional(), else_branch: elseBranch.optional() }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("filter"), name: query.name, input_expression: external_exports.string().min(1), predicate_expression: external_exports.string().min(1) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("wait"), name: query.name, duration_seconds: external_exports.number().finite().min(1).max(2592e3) }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("human"), name: query.name, ...humanConfig }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("response"), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
-  external_exports.object({ ...base, type: external_exports.literal("agent"), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
+  external_exports.object({ ...base, type: external_exports.literal("query"), ...query, looped: external_exports.boolean().optional(), iteration_values_code: external_exports.string().refine((value) => !!value.trim(), "Loop requires an array expression.").optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("loop"), name: query.name, iteration_values_code: external_exports.string().refine((value) => !!value.trim(), "Loop requires an array expression."), code: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("condition"), name: workflowName.optional(), code: external_exports.string().min(1).optional(), conditions: conditionBranches.optional(), else_branch: elseBranch.optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("filter"), name: workflowName, input_expression: external_exports.string().min(1), predicate_expression: external_exports.string().min(1) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("wait"), name: workflowName, duration_seconds: external_exports.number().finite().min(1).max(2592e3) }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("human"), name: workflowName, ...humanConfig }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("response"), name: workflowName.optional(), status_code_expression: external_exports.string().min(1).optional(), code: external_exports.string().min(1), status_code: external_exports.number().int().min(100).max(599).optional() }).strict(),
+  external_exports.object({ ...base, type: external_exports.literal("agent"), name: workflowName.optional(), system_prompt: external_exports.string().optional(), user_prompt: external_exports.string().optional(), output_format: external_exports.record(external_exports.string(), external_exports.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict()
 ]);
 var specSchema = external_exports.object({
   schema_version: external_exports.literal(1).default(1),
   nodes: external_exports.array(nodeSchema).max(200).default([]),
   edges: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref, port: external_exports.string().min(1) }).strict()).max(500).default([]),
+  agent_tools: external_exports.array(external_exports.object({ ref, existing_id: external_exports.string().optional(), from: ref, to: ref }).strict()).default([]),
+  webhook_parameters: external_exports.array(external_exports.object({ key: workflowName, dataType: external_exports.enum(["string", "number", "object", "array", "boolean", "null"]) }).strict()).optional(),
   remove_node_ids: external_exports.array(external_exports.string()).default([]),
   remove_edge_ids: external_exports.array(external_exports.string()).default([]),
+  setup_script: external_exports.object({ javascript: external_exports.string().optional(), python: external_exports.string().optional() }).strict().optional(),
   workflow_inputs: workflowInputs.optional(),
   test_parameters: external_exports.record(external_exports.string(), external_exports.unknown()).optional()
 }).strict();
@@ -475,9 +484,11 @@ function validateGraph(graph, queryIds) {
       continue;
     }
     if (isAttachmentEdge(edge)) {
-      if (edge.targetHandle === "ai-model" && !(source.type === "query" && source.data.isChildOfAgent === true && source.data.agentConnectionType === "ai-model" && target.type === "agent")) {
-        error("invalid_attachment", path, "AI model attachment must connect an Agent model query child to an Agent.");
+      if (!(source.type === "query" && source.data.isChildOfAgent === true && source.data.agentConnectionType === edge.targetHandle && target.type === "agent")) {
+        error("invalid_attachment", path, "Agent attachment must connect a matching query child to an Agent.");
       }
+      if (graph.edges.filter((candidate) => isAttachmentEdge(candidate) && candidate.source === source.id).length > 1 || flowEdges.some((candidate) => candidate.source === source.id || candidate.target === source.id))
+        error("invalid_attachment", path, "An attached query belongs to one Agent and cannot also participate in control flow.");
       continue;
     }
     if (target.type === "input")
@@ -563,7 +574,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
         throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`);
       }
     }
-    if (input.type === "loop") {
+    if ((input.type === "loop" || input.type === "query") && input.iteration_values_code !== void 0) {
       try {
         new Script(`(async function() {${input.iteration_values_code}
 })`);
@@ -611,8 +622,17 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
       if (data.code === void 0 && !Array.isArray(data.conditions))
         throw new Error("Condition requires code or conditions.");
     }
-    if (input.type === "response")
+    if (input.type === "condition" || input.type === "response")
+      data.nodeName = input.name ?? old?.data.nodeName ?? input.ref;
+    if (input.type === "response") {
       data.code = input.code;
+      if (input.status_code_expression !== void 0) {
+        if (input.status_code !== void 0)
+          throw new Error("Use status_code or status_code_expression, not both.");
+        new Script(`(${input.status_code_expression})`);
+        data.statusCode = { fxActive: true, value: input.status_code_expression };
+      }
+    }
     if (input.type === "filter") {
       new Script(`(${input.input_expression})`);
       new Script(`(${input.predicate_expression})`);
@@ -634,13 +654,19 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     if (input.type === "response" && (input.status_code !== void 0 || data.statusCode === void 0)) {
       data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
     }
+    if (input.type === "query") {
+      if (input.looped !== void 0)
+        data.looped = input.looped;
+      if (input.iteration_values_code !== void 0)
+        data.iterationValuesCode = input.iteration_values_code;
+    }
     if (input.type === "loop") {
       data.looped = true;
       data.iterationValuesCode = input.iteration_values_code;
     }
     if (input.type === "agent") {
       const oldOptions = old?.data.options && typeof old.data.options === "object" && !Array.isArray(old.data.options) ? old.data.options : {};
-      data.nodeName = old?.data.nodeName ?? input.ref;
+      data.nodeName = input.name ?? old?.data.nodeName ?? input.ref;
       data.options = {
         ...oldOptions,
         systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? "",
@@ -724,6 +750,37 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
         n.data.errorHandler = true;
     }
   }
+  for (const attachment of spec.agent_tools) {
+    if (edge_ids[attachment.ref])
+      throw new Error("Duplicate edge ref.");
+    const source = node_ids[attachment.from] ?? attachment.from;
+    const target = node_ids[attachment.to] ?? attachment.to;
+    const queryNode = graph.nodes.find((node) => node.id === source);
+    const agent = graph.nodes.find((node) => node.id === target);
+    if (queryNode?.type !== "query" || agent?.type !== "agent")
+      throw new Error("Agent tools must connect a query to an Agent.");
+    if (queryNode.data.agentConnectionType === "ai-model")
+      throw new Error("A model cannot also be an Agent tool.");
+    if (controlFlowEdges(graph).some((edge2) => edge2.source === source || edge2.target === source))
+      throw new Error("Agent tool queries cannot also have control-flow connections.");
+    const old = attachment.existing_id ? graph.edges.find((edge2) => edge2.id === attachment.existing_id) : graph.edges.find((edge2) => edge2.source === source && edge2.target === target && edge2.targetHandle === "tool");
+    if (attachment.existing_id && (!old || old.targetHandle !== "tool"))
+      throw new Error("Unknown Agent tool attachment.");
+    const id = old?.id ?? ids?.edge_ids[attachment.ref] ?? randomUUID();
+    const edge = { ...old, id, source, target, sourceHandle: "output", targetHandle: "tool", type: "custom", data: { direction: "vertical" } };
+    if (old)
+      graph.edges[graph.edges.indexOf(old)] = edge;
+    else
+      graph.edges.push(edge);
+    Object.assign(queryNode.data, { isChildOfAgent: true, agentConnectionType: "tool" });
+    edge_ids[attachment.ref] = id;
+  }
+  for (const node of graph.nodes) {
+    if (node.data.agentConnectionType === "tool" && !graph.edges.some((edge) => edge.source === node.id && edge.targetHandle === "tool")) {
+      delete node.data.isChildOfAgent;
+      delete node.data.agentConnectionType;
+    }
+  }
   graph.queries = graph.queries.filter((q) => !removedDefinitionIds.includes(q.idOnDefinition) || graph.nodes.some((n) => n.data.idOnDefinition === q.idOnDefinition));
   const depths = new Map(graph.nodes.map((n) => [n.id, 0]));
   for (let pass = 0; pass < graph.nodes.length; pass++) {
@@ -747,6 +804,31 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     n.position = { x, y };
     placed.push(n);
   }
+  for (const previous of current.nodes) {
+    const updated = graph.nodes.find((node) => node.id === previous.id);
+    const oldName = previous.data.nodeName;
+    const newName = updated?.data.nodeName;
+    if (typeof oldName !== "string" || typeof newName !== "string" || oldName === newName)
+      continue;
+    for (const edge of controlFlowEdges(graph).filter((edge2) => edge2.source === previous.id)) {
+      const target = graph.nodes.find((node) => node.id === edge.target);
+      if (target?.type !== "filter" || typeof target.data.inputExpression !== "string")
+        continue;
+      if (spec.nodes.some((input) => input.existing_id === target.id && input.type === "filter"))
+        continue;
+      const expression = target.data.inputExpression;
+      const trimmed = expression.trimStart();
+      const suffix = trimmed.slice(oldName.length);
+      if (trimmed.startsWith(oldName) && (!suffix.trim() || suffix.startsWith(".") || suffix.startsWith("[") || suffix.startsWith("?."))) {
+        const source = /^[A-Za-z_$][\w$]*$/.test(newName) ? newName : `globalThis[${JSON.stringify(newName)}]`;
+        target.data.inputExpression = expression.slice(0, expression.length - trimmed.length) + source + suffix;
+      }
+    }
+  }
+  if (spec.webhook_parameters !== void 0)
+    graph.webhookParams = structuredClone(spec.webhook_parameters);
+  if (spec.setup_script !== void 0)
+    graph.setupScript = spec.setup_script;
   if (spec.workflow_inputs !== void 0)
     graph.workflowInputs = structuredClone(spec.workflow_inputs);
   if (spec.test_parameters !== void 0)
@@ -769,19 +851,19 @@ var nodeCatalog = {
   nodes: [
     { type: "start", renderer: "input", ports: ["default"] },
     { type: "javascript", renderer: "query", ports: ["success", "failure"], fields: ["name", "code"] },
-    { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options"] },
+    { type: "query", renderer: "query", ports: ["success", "failure"], fields: ["name", "datasource_id", "options", "looped", "iteration_values_code"] },
     { type: "loop", renderer: "query", ports: ["success", "failure"], fields: ["name", "iteration_values_code", "code"] },
-    { type: "condition", renderer: "if-condition", ports: ["condition id", "false (else)"], fields: ["code (legacy only)", "conditions", "else_branch"] },
+    { type: "condition", renderer: "if-condition", ports: ["condition id", "false (else)"], fields: ["name", "code (legacy only)", "conditions", "else_branch"] },
     { type: "filter", renderer: "filter", ports: ["default"], fields: ["name", "input_expression", "predicate_expression"] },
     { type: "wait", renderer: "wait", ports: ["default"], fields: ["name", "duration_seconds"] },
     { type: "human", renderer: "human", ports: ["outcome key"], fields: ["name", "outcomes", "input_schema", "approvers", "timeout", "reminders", "notification"] },
-    { type: "response", renderer: "output", ports: [], fields: ["code", "status_code"] },
-    { type: "agent", renderer: "agent", ports: ["default"], fields: ["system_prompt", "user_prompt", "output_format", "model"] }
+    { type: "response", renderer: "output", ports: [], fields: ["name", "code", "status_code", "status_code_expression"] },
+    { type: "agent", renderer: "agent", ports: ["default"], fields: ["name", "system_prompt", "user_prompt", "output_format", "model"] }
   ],
   edit_semantics: "Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.",
   workflow_inputs: "Use workflow_inputs to replace typed declarations; omission preserves them and [] clears them. test_parameters remains separate.",
-  advanced_nodes: "Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Human approval resolution remains in ToolJet.",
-  limitations: ["Agent tool connections are not authored", "No publishing or trigger setup", "No concurrent-edit protection", "No automatic execution during authoring", "Unknown node types are preserved but not authored"]
+  advanced_nodes: "Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Use resolve_workflow_approval for an explicitly requested decision. Agent tools use agent_tools attachments.",
+  limitations: ["Publishing uses release_app; management tools configure schedules and webhooks", "No concurrent-edit protection", "No automatic execution during authoring", "Unknown node types are preserved but not authored"]
 };
 createRequire(import.meta.url);
 var capabilityRequestSchema = external_exports.object({
@@ -841,6 +923,8 @@ function workflowReadiness(graph, structuralErrors) {
   const blockers = [];
   for (const node of graph.nodes.filter((node2) => reachable.has(node2.id))) {
     const issues = [];
+    if (node.type === "query" && node.data.looped === true && (typeof node.data.iterationValuesCode !== "string" || !node.data.iterationValuesCode.trim()))
+      issues.push("Loop requires an array expression.");
     if (node.type === "human")
       issues.push(...humanConfigurationErrors(node.data));
     if (node.type === "wait") {
@@ -938,7 +1022,9 @@ async function prepare(client, workflowId, versionId, spec, ids) {
       throw new Error(`Duplicate query name: ${name2}`);
     claimedNames.add(name2);
     const requestedOptions = item.role === "agent-model" ? item.options : input.type === "javascript" || input.type === "loop" ? { ...oldQuery?.options ?? {}, code: input.code } : input.options;
-    const options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    let options = item.role === "agent-model" ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    if (kind === "workflows")
+      options = (await client.resolveReference(options, snapshot)).options;
     if (item.role === "workflow-node" && kind === "runjs")
       assertWorkflowJavaScript(options.code, label);
     if (item.role === "workflow-node") {
@@ -950,6 +1036,17 @@ async function prepare(client, workflowId, versionId, spec, ids) {
     writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name: name2, dataSourceId: dataSourceId ?? "", kind, options });
     if (!existingMapping && !compiled.graph.queries.some((mapping) => mapping.idOnDefinition === item.definition_id))
       compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const stateNames = /* @__PURE__ */ new Set();
+  for (const node of compiled.graph.nodes) {
+    const mapping = compiled.graph.queries.find((mapping2) => mapping2.idOnDefinition === node.data.idOnDefinition);
+    const write = writes.find((write2) => write2.node_id === node.id);
+    const name2 = node.type === "query" ? write?.name ?? queries.find((query2) => query2.id === mapping?.id)?.name : node.data.nodeName;
+    if (typeof name2 !== "string" || !name2.trim())
+      continue;
+    if (stateNames.has(name2))
+      throw new Error(`Duplicate workflow node name: ${name2}`);
+    stateNames.add(name2);
   }
   const queryIds = /* @__PURE__ */ new Set([...queries.map((q) => q.id), ...writes.filter((q) => !q.existing_id).map((q) => `pending:${q.node_id}`)]);
   const validation = validateGraph(compiled.graph, queryIds);
@@ -1230,6 +1327,208 @@ return { id: snapshot.id, patch, changed: Object.keys(patch).length > 0 };`;
       "Draft tracks native change events, not every displayed input value. Programmatic field changes must update the draft explicitly. Browser-verify that all change events fire, including both checkbox transitions."
     ]
   };
+}
+createRequire(import.meta.url);
+var userRole = external_exports.enum(["admin", "builder", "end-user"]);
+var userStatus = external_exports.enum(["active", "archived", "invited"]);
+var listWorkspaceAppsInput = external_exports.object({
+  page: external_exports.number().int().positive().optional(),
+  search_text: external_exports.string().trim().max(100).describe("Filter by app name.").optional(),
+  folder_id: external_exports.string().uuid().describe("Folder ID returned by list_workspace_folders.").optional()
+}).strict();
+var listWorkspaceFoldersInput = external_exports.object({
+  search_text: external_exports.string().trim().max(100).describe("Case-insensitive folder-name search.").optional()
+}).strict();
+function listWorkspaceAppsTool(client) {
+  return {
+    name: "list_workspace_apps",
+    title: "List Workspace Apps",
+    strictInput: true,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.",
+    inputSchema: listWorkspaceAppsInput.shape,
+    async handler(input) {
+      try {
+        const args = listWorkspaceAppsInput.parse(input);
+        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function listWorkspaceFoldersTool(client) {
+  return {
+    name: "list_workspace_folders",
+    title: "List Workspace Folders",
+    strictInput: true,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: "List visible front-end app folders in the workspace pinned to the current ToolJet connection. Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. Pass a returned id as folder_id to list_workspace_apps to read that folder\u2019s apps with pagination and app-name search. OAuth connections require the apps scope; existing ToolJet permissions still apply.",
+    inputSchema: listWorkspaceFoldersInput.shape,
+    async handler(input) {
+      try {
+        const args = listWorkspaceFoldersInput.parse(input);
+        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function listWorkspaceUsersTool(client) {
+  return {
+    name: "list_workspace_users",
+    title: "List Workspace Users",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false
+    },
+    description: "List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.",
+    inputSchema: {
+      page: external_exports.number().int().positive().optional(),
+      search_text: external_exports.string().trim().max(100).optional(),
+      filter_status: userStatus.optional()
+    },
+    async handler(args) {
+      try {
+        return ok(await client.listWorkspaceUsers({
+          page: args.page,
+          searchText: args.search_text,
+          status: args.filter_status
+        }));
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+function required(value, label) {
+  if (!value)
+    throw new Error(`${label} is required for this action.`);
+  return value;
+}
+var manageWorkspaceUsersInput = external_exports.object({
+  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
+  organization_user_id: external_exports.string().uuid().optional(),
+  email: external_exports.string().email().optional(),
+  first_name: external_exports.string().trim().max(99).optional(),
+  last_name: external_exports.string().trim().max(99).optional(),
+  role: userRole.optional(),
+  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
+  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+  confirm: external_exports.boolean().optional()
+}).strict();
+function manageWorkspaceUsersTool(client) {
+  return {
+    name: "manage_workspace_users",
+    title: "Manage Workspace Users",
+    strictInput: true,
+    // invite is additive, but update overwrites a member's role and archive revokes their access to
+    // the workspace, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true
+    },
+    description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
+    inputSchema: manageWorkspaceUsersInput.shape,
+    async handler(input) {
+      try {
+        const args = manageWorkspaceUsersInput.parse(input);
+        const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
+        for (const key of Object.keys(args)) {
+          if (!["action", "confirm", ...allowed].includes(key))
+            throw new Error(`${key} is not supported for ${args.action}; no changes were made.`);
+        }
+        if (args.action === "update" && (args.first_name !== void 0 || args.last_name !== void 0)) {
+          throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
+        }
+        if (args.confirm !== true) {
+          throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
+        }
+        if (args.action === "invite") {
+          await client.inviteWorkspaceUser({
+            email: required(args.email, "email"),
+            role: args.role ?? "end-user",
+            firstName: args.first_name,
+            lastName: args.last_name,
+            groupIds: args.group_ids
+          });
+          return ok({ invited: true, email: args.email });
+        }
+        const organizationUserId = required(args.organization_user_id, "organization_user_id");
+        if (args.action === "archive" || args.action === "unarchive") {
+          await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
+          return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
+        }
+        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
+          throw new Error("update requires at least one changed field.");
+        }
+        const result = await client.updateWorkspaceUser(organizationUserId, {
+          firstName: args.first_name,
+          lastName: args.last_name,
+          role: args.role,
+          addGroupIds: args.group_ids,
+          userMetadata: args.user_metadata
+        });
+        return ok({
+          organization_user_id: organizationUserId,
+          ...result,
+          ...!result.updated ? { already_satisfied: true } : {}
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+var workspaceUsers = [
+  {
+    action: "invite",
+    name: "invite_workspace_user",
+    title: "Invite Workspace User",
+    description: "Send an email invitation to the pinned workspace. Requires confirm:true for the exact recipient and access. Role defaults to end-user; optional group_ids add existing custom groups. Requires workspace_users OAuth scope and ToolJet permissions. Do not automatically retry an uncertain send.",
+    required: ["email", "confirm"],
+    optional: ["first_name", "last_name", "role", "group_ids"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }
+  },
+  {
+    action: "update",
+    name: "update_workspace_user",
+    title: "Update Workspace User",
+    description: "Change a workspace member role, add custom group memberships, or merge supplied metadata keys. Preserves other memberships and metadata; empty group_ids removes nothing. Changing role to end-user transfers owned apps to the acting admin: disclose before confirm:true. Cannot change names, email, or passwords. Requires workspace_users scope and ToolJet permissions; reads back updates.",
+    required: ["organization_user_id", "confirm"],
+    optional: ["role", "group_ids", "user_metadata"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "archive",
+    name: "archive_workspace_user",
+    title: "Archive Workspace User",
+    description: "Archive the exact member of the pinned workspace and revoke their workspace access. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
+    required: ["organization_user_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "unarchive",
+    name: "unarchive_workspace_user",
+    title: "Unarchive Workspace User",
+    description: "Restore an archived member to active status in the pinned workspace. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
+    required: ["organization_user_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  }
+];
+function workspaceUserActionTools(source) {
+  return exposeActions(source, workspaceUsers);
 }
 createRequire(import.meta.url);
 var requestSchema = external_exports.object({
@@ -2677,12 +2976,17 @@ function getComponentCatalogTool(client) {
   };
 }
 export {
-  deleteNode as A,
-  validateGraph as B,
+  capabilityRequestSchema as A,
+  getWorkflowCapabilities as B,
   COMPONENT_FX_GUIDANCE as C,
-  editContractSchema as D,
-  generateEditContract as E,
+  lint as D,
+  apply as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
+  deleteNode as G,
+  validateGraph as H,
+  editContractSchema as I,
+  generateEditContract as J,
+  workspaceUserActionTools as K,
   batchChildOrders as a,
   bodyParentId as b,
   childOrderProperty as c,
@@ -2697,16 +3001,16 @@ export {
   nodeSchema as l,
   mapKeyRefusal as m,
   normalizeComponentSpec as n,
-  inspectDatasourceSchemaTool as o,
+  listWorkspaceAppsTool as o,
   plannedCurrency as p,
-  getComponentCatalogTool as q,
-  updateLayoutTool as r,
+  listWorkspaceFoldersTool as q,
+  listWorkspaceUsersTool as r,
   strictEntry as s,
-  datasourceMetadataTools as t,
-  updateComponentsTool as u,
-  nodeCatalog as v,
-  capabilityRequestSchema as w,
-  getWorkflowCapabilities as x,
-  lint as y,
-  apply as z
+  manageWorkspaceUsersTool as t,
+  inspectDatasourceSchemaTool as u,
+  getComponentCatalogTool as v,
+  updateComponentsTool as w,
+  updateLayoutTool as x,
+  datasourceMetadataTools as y,
+  nodeCatalog as z
 };

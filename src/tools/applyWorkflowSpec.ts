@@ -20,7 +20,9 @@ export function applyWorkflowSpecTool(client: ToolJetClient): ToolDef {
           ? { ...ok(result), isError: true }
           : ok(result);
       } catch (error) {
-        return fail(error);
+        // apply() returns partial-write failures as data. Its thrown errors occur
+        // during plan lookup or preflight, before its first write.
+        return { ...ok({ error: error instanceof Error ? error.message : String(error), not_written: true }), isError: true };
       }
     },
   };
@@ -50,6 +52,24 @@ const mutationInputs = [
     description: 'Remove one explicitly selected edge from an editable workflow draft, including control-flow or agent attachment edges. Preserves all nodes and their queries, so removing an attachment leaves its model/tool node and query in place and may leave the draft unready. To remove a connected agent model and its query together, use upsert_workflow_agent_node with model:null instead. Never executes the graph.',
     schema: z.object({ ...workflowTargetShape, edge_id: z.string().min(1), allow_draft: z.boolean().default(true) }).strict(),
     spec: (args: any) => ({ remove_edge_ids: [args.edge_id] }),
+  },
+  {
+    name: 'upsert_workflow_agent_tool', title: 'Attach Workflow Agent Tool',
+    description: 'Attach an existing query node to an Agent as a callable tool. Store toolDescription and $ai parameters in the query options. Does not execute the tool.',
+    schema: z.object({ ...workflowTargetShape, attachment: specSchema.shape.agent_tools.unwrap().element, allow_draft: z.boolean().default(true) }).strict(),
+    spec: (args: any) => ({ agent_tools: [args.attachment] }),
+  },
+  {
+    name: 'set_workflow_setup_script', title: 'Set Workflow Setup Script',
+    description: 'Replace the workflow setup script in an editable draft. It runs during workflow execution; this edit does not execute it.',
+    schema: z.object({ ...workflowTargetShape, setup_script: specSchema.shape.setup_script.unwrap(), allow_draft: z.boolean().default(true) }).strict(),
+    spec: (args: any) => ({ setup_script: args.setup_script }),
+  },
+  {
+    name: 'set_workflow_webhook_parameters', title: 'Set Legacy Workflow Webhook Parameters',
+    description: 'Replace legacy webhook parameter declarations. Prefer typed workflow inputs for new workflows. This does not enable webhooks.',
+    schema: z.object({ ...workflowTargetShape, parameters: specSchema.shape.webhook_parameters.unwrap(), allow_draft: z.boolean().default(true) }).strict(),
+    spec: (args: any) => ({ webhook_parameters: args.parameters }),
   },
   {
     name: 'set_workflow_inputs', title: 'Set Workflow Inputs',

@@ -42,6 +42,8 @@ export const runWorkflowInputSchema = z.object({
   ...workflowTargetShape,
   environment_id: workflowIdSchema,
   params: z.record(z.string(), z.unknown()).default({}),
+  start_node_id: z.string().uuid().optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
 }).strict();
 
 export const getWorkflowExecutionInputSchema = z.object({

@@ -2,11 +2,23 @@ import { describe, it, expect, vi } from 'vitest';
 import { createWorkflowClient } from '../../src/workflowClient.js';
 import type { Auth } from '../../src/auth.js';
 const version = 'v';
-const app = (id = 'w', versionId = version, queryIds: string[] = []) => ({ id, type: 'workflow', organizationId: 'org', slug: 'my-workflow', isMaintenanceOn: true, editing_version: { id: versionId, status: 'DRAFT', currentEnvironmentId: 'env', definition: { nodes: [], edges: [], queries: queryIds.map((id, index) => ({ id, idOnDefinition: `node-${index}` })), customField: { snake_key: 42 } } } });
+const app = (id = '116910ef-8aaa-4c9f-8cff-a760244dfb37', versionId = version, queryIds: string[] = []) => ({ id, type: 'workflow', organizationId: 'org', slug: 'my-workflow', isMaintenanceOn: true, editing_version: { id: versionId, status: 'DRAFT', currentEnvironmentId: 'env', definition: { nodes: [], edges: [], queries: queryIds.map((id, index) => ({ id, idOnDefinition: `node-${index}` })), customField: { snake_key: 42 } } } });
 function exported(value = app()) {
   return { app: [{ definition: { appV2: { id: value.id, type: value.type, organizationId: value.organizationId, appVersions: [value.editing_version], dataSourceOptions: [{ secret: 'not-returned' }] } } }] };
 }
 function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported() : path.startsWith('/api/v2/apps/') ? app(path.split('/')[4], path.split('/')[6]) : app())))) {
+  const originalFetch = fetcher.getMockImplementation();
+  fetcher.mockImplementation(async (path: string, init?: any) => {
+    if (/^\/api\/apps\/[^/]+(?:\/versions\?includeDefaultBranchVersions=true)?$/.test(path)) {
+      const id = path.split('/')[3];
+      const selected = id === '116910ef-8aaa-4c9f-8cff-a760244dfb37' ? 'v' : 'child-v';
+      const response = await originalFetch!(`/api/v2/apps/${id}/versions/${selected}`, init);
+      const value = await response.json();
+      if (path.includes('/versions?')) return Response.json({versions:[{...value.editing_version,name:selected,versionType:'VERSION',branchId:'main',branch:{id:'main',isDefault:true},createdAt:'2026-01-01',updatedAt:'2026-01-01'}]});
+      return Response.json(value);
+    }
+    return originalFetch!(path, init);
+  });
   const auth = { authedFetch: fetcher, getOrganizationId: async () => 'org', getOrganizationSlug: async () => 'workspace' } as unknown as Auth;
   const queries = { assertDatasourceAllowed: vi.fn().mockResolvedValue(undefined), getQueries: vi.fn().mockResolvedValue([]), listDatasources: vi.fn().mockResolvedValue([]), createQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), getDevelopmentEnvironmentId: vi.fn() };
   const client = createWorkflowClient(auth, { apiUrl: 'http://localhost:3000', appUrl: 'http://localhost:3000', sessionToken: 'test-session', workspaceId: 'org' }, queries);
@@ -14,8 +26,8 @@ function setup(fetcher = vi.fn(async (path: string) => new Response(JSON.stringi
 }
 describe('workflow HTTP adapter', () => {
   it('uses version metadata and lossless export definitions without exposing datasource options', async () => {
-    const { client, fetcher } = setup(); const result = await client.get('w', 'v');
-    expect(fetcher.mock.calls[0][0]).toBe('/api/v2/apps/w/versions/v');
+    const { client, fetcher } = setup(); const result = await client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v');
+    expect(fetcher.mock.calls[0][0]).toBe('/api/v2/apps/116910ef-8aaa-4c9f-8cff-a760244dfb37/versions/v');
     expect(result.definition.customField).toEqual({ snake_key: 42 });
     expect(JSON.stringify(result)).not.toContain('not-returned');
     expect(fetcher.mock.calls[1][0]).toBe('/api/v2/resources/export');
@@ -25,19 +37,19 @@ describe('workflow HTTP adapter', () => {
   it.each(['PUBLISHED', 'RELEASED'])('does not edit %s versions', async status => {
     const value = app(); value.editing_version.status = status;
     const { client } = setup(vi.fn(async path => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported(value) : value))));
-    const snapshot = await client.get('w', 'v'); expect(snapshot.editable).toBe(false);
+    const snapshot = await client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v'); expect(snapshot.editable).toBe(false);
     await expect(client.save(snapshot, snapshot.definition)).rejects.toThrow('editable draft');
   });
   it('preserves the selected workspace branch in its editor link', async () => {
     const value = app();
     Object.assign(value.editing_version, { branch: { name: 'feature/ceramics' } });
     const { client } = setup(vi.fn(async path => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported(value) : value))));
-    expect((await client.get('w', 'v')).editor_url).toBe('http://localhost:3000/workspace/apps/my-workflow?branch=feature%2Fceramics');
+    expect((await client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v')).editor_url).toBe('http://localhost:3000/workspace/apps/my-workflow?branch=feature%2Fceramics');
   });
   it('rejects a version from a different workspace', async () => {
     const value = app(); value.organizationId = 'other';
     const { client } = setup(vi.fn(async () => new Response(JSON.stringify(value))));
-    await expect(client.get('w', 'v')).rejects.toThrow('active workspace');
+    await expect(client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v')).rejects.toThrow('active workspace');
   });
   it('posts workflow creation rather than front-end app creation', async () => {
     const { client, fetcher } = setup(); await client.create('Workflow');
@@ -50,31 +62,31 @@ describe('workflow HTTP adapter', () => {
     await expect(client.create('Workflow')).rejects.toThrow('created was created'); expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it('runs exactly the requested version and environment', async () => {
-    const { client, fetcher } = setup(); await client.run('w', 'v', 'env', { foo: 'bar' });
+    const { client, fetcher } = setup(); await client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', { foo: 'bar' });
     const [url, init] = fetcher.mock.calls.at(-1)!;
     expect(url).toBe('/api/workflow_executions');
-    expect(JSON.parse(init.body)).toEqual({ executeUsing: 'version', appId: 'w', appVersionId: 'v', environmentId: 'env', params: { foo: 'bar' } });
+    expect(JSON.parse(init.body)).toEqual({ executeUsing: 'version', appId: '116910ef-8aaa-4c9f-8cff-a760244dfb37', appVersionId: 'v', environmentId: 'env', params: { foo: 'bar' } });
   });
   it('refuses mismatched environments without execution', async () => {
-    const { client, fetcher } = setup(); await expect(client.run('w', 'v', 'production', {})).rejects.toThrow('Environment');
+    const { client, fetcher } = setup(); await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'production', {})).rejects.toThrow('Environment');
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it('refuses disabled workflows without enabling them', async () => {
     const value = app(); value.isMaintenanceOn = false;
     const { client, fetcher } = setup(vi.fn(async path => new Response(JSON.stringify(path === '/api/v2/resources/export' ? exported(value) : value))));
-    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('disabled'); expect(fetcher).toHaveBeenCalledTimes(2);
+    await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {})).rejects.toThrow('disabled'); expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it('refuses a stored workflow query whose datasource is excluded from AI', async () => {
     const { client, fetcher, queries } = setup();
     queries.getQueries.mockResolvedValue([{ id: 'old-node', data_source_id: 'shared-sample' }]);
     queries.assertDatasourceAllowed.mockRejectedValue(new Error('Sample data source is unavailable to AI.'));
-    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('Sample data source');
+    await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {})).rejects.toThrow('Sample data source');
     expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
   });
   it('refuses a workflow-node create on a datasource excluded from AI', async () => {
     const { client, fetcher, queries } = setup();
     queries.assertDatasourceAllowed.mockRejectedValue(new Error('Sample data source is unavailable to AI.'));
-    await expect(client.createWorkflowQuery({ workflowId: 'w', versionId: 'v', name: 'probe',
+    await expect(client.createWorkflowQuery({ workflowId: '116910ef-8aaa-4c9f-8cff-a760244dfb37', versionId: 'v', name: 'probe',
       kind: 'postgresql', dataSourceId: 'shared-sample', options: { query: 'SELECT 1' },
     })).rejects.toThrow('Sample data source');
     expect(fetcher).not.toHaveBeenCalled();
@@ -82,51 +94,51 @@ describe('workflow HTTP adapter', () => {
   it('checks actual identities for legacy sources absent from the inventory', async () => {
     const { client, queries } = setup();
     queries.getQueries.mockResolvedValue([{ id: 'legacy-node', data_source_id: 'app-local' }]);
-    await client.run('w', 'v', 'env', {});
+    await client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {});
     expect(queries.assertDatasourceAllowed).toHaveBeenCalledWith('app-local', 'v', 'env');
   });
   it('refuses a parent workflow when a nested workflow uses Sample', async () => {
     const { client, fetcher, queries } = setup();
     queries.getQueries.mockImplementation(async version => version === 'v'
-      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'child', workflowVersionId: 'child-v' } }]
+      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'e204f49c-e823-4674-868a-e6da49b15cba', workflowVersionId: 'child-v' } }]
       : [{ id: 'child-read', data_source_id: 'shared-sample', kind: 'postgresql' }]);
     queries.assertDatasourceAllowed.mockImplementation(async id => {
       if (id === 'shared-sample') throw new Error('Sample data source is unavailable to AI.');
     });
-    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('Sample data source');
+    await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {})).rejects.toThrow('Sample data source');
     expect(queries.getQueries).toHaveBeenCalledWith('child-v');
     expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
   });
   it('checks each version once when workflow references form a cycle', async () => {
     const { client, queries } = setup();
     queries.getQueries.mockResolvedValue([{ id: 'self-call', data_source_id: 'workflow-static', kind: 'workflows',
-      options: { workflowId: 'w', workflowVersionId: 'v' } }]);
-    await client.run('w', 'v', 'env', {});
+      options: { workflowId: '116910ef-8aaa-4c9f-8cff-a760244dfb37', workflowVersionId: 'v' } }]);
+    await client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {});
     expect(queries.getQueries).toHaveBeenCalledExactlyOnceWith('v');
   });
   it.each([false, true])('refuses foreign query mappings in a stored workflow (nested=%s)', async nested => {
-    const root = app('w', 'v', [nested ? 'child-call' : 'foreign-query']);
-    const child = app('child', 'child-v', ['foreign-query']);
+    const root = app('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', [nested ? 'child-call' : 'foreign-query']);
+    const child = app('e204f49c-e823-4674-868a-e6da49b15cba', 'child-v', ['foreign-query']);
     const { client, queries, fetcher } = setup(vi.fn(async path => new Response(JSON.stringify(
       path === '/api/v2/resources/export' ? exported(root)
-        : path.includes('/apps/child/') ? child : root))));
+        : path.includes('/apps/e204f49c-e823-4674-868a-e6da49b15cba/') ? child : root))));
     queries.getQueries.mockImplementation(async version => version === 'v' && nested
-      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'child', workflowVersionId: 'child-v' } }]
+      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'e204f49c-e823-4674-868a-e6da49b15cba', workflowVersionId: 'child-v' } }]
       : []);
-    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('query outside its version');
+    await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {})).rejects.toThrow('query outside its version');
     expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
   });
   it('checks a released child version and allows verified in-version mappings', async () => {
-    const root = app('w', 'v', ['child-call']);
-    const child = app('child', 'child-v', ['owned-read']);
+    const root = app('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', ['child-call']);
+    const child = app('e204f49c-e823-4674-868a-e6da49b15cba', 'child-v', ['owned-read']);
     const { client, queries, fetcher } = setup(vi.fn(async path => new Response(JSON.stringify(
       path === '/api/v2/resources/export' ? exported(root)
-        : path === '/api/apps/child' ? { current_version_id: 'child-v' }
-          : path.includes('/apps/child/') ? child : root))));
+        : path === '/api/apps/e204f49c-e823-4674-868a-e6da49b15cba' ? { current_version_id: 'child-v' }
+          : path.includes('/apps/e204f49c-e823-4674-868a-e6da49b15cba/') ? child : root))));
     queries.getQueries.mockImplementation(async version => version === 'v'
-      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'child' } }]
+      ? [{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows', options: { workflowId: 'e204f49c-e823-4674-868a-e6da49b15cba' } }]
       : [{ id: 'owned-read', data_source_id: 'owned', kind: 'postgresql' }]);
-    await client.run('w', 'v', 'env', {});
+    await client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {});
     expect(queries.assertDatasourceAllowed).toHaveBeenCalledWith('owned', 'child-v', 'env');
     expect(fetcher.mock.calls.at(-1)?.[0]).toBe('/api/workflow_executions');
   });
@@ -134,12 +146,12 @@ describe('workflow HTTP adapter', () => {
     const { client, fetcher, queries } = setup();
     queries.getQueries.mockResolvedValue([{ id: 'child-call', data_source_id: 'workflow-static', kind: 'workflows',
       options: { workflowId: '{{startTrigger.params.target}}' } }]);
-    await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('dynamic nested workflow target');
+    await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {})).rejects.toThrow('workflowId');
     expect(fetcher.mock.calls.some(([path]) => path === '/api/workflow_executions')).toBe(false);
   });
   it('never retries ambiguous execution requests', async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(app()))).mockResolvedValueOnce(new Response(JSON.stringify(exported()))).mockRejectedValueOnce(new Error('timeout'));
-    const { client } = setup(fetcher); await expect(client.run('w', 'v', 'env', {})).rejects.toThrow('outcome is unknown');
+    const { client } = setup(fetcher); await expect(client.run('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v', 'env', {})).rejects.toThrow('outcome is unknown');
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
   it('scopes plan identity to credential and API origin', async () => {
@@ -162,10 +174,10 @@ describe('lossless workflow reads', () => {
       return new Response(JSON.stringify(path === '/api/v2/resources/export' ? raw : native));
     });
     const { client } = setup(fetcher);
-    const first = await client.get('w', 'v');
+    const first = await client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v');
     await client.save(first, first.definition);
-    expect((await client.get('w', 'v')).definition.customField).toEqual({ snake_key: 42, snakeKey: 7, nested_value: { HTTP_code: 202 } });
-    expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({ organization_id: 'org', app: [{ id: 'w', search_params: { version_id: 'v' } }] });
+    expect((await client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v')).definition.customField).toEqual({ snake_key: 42, snakeKey: 7, nested_value: { HTTP_code: 202 } });
+    expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({ organization_id: 'org', app: [{ id: '116910ef-8aaa-4c9f-8cff-a760244dfb37', search_params: { version_id: 'v' } }] });
   });
   it.each(['workflow', 'workspace', 'version', 'definition', 'permission'])('refuses unsafe export %s responses without falling back to transformed data', async mismatch => {
     const raw = exported();
@@ -176,15 +188,15 @@ describe('lossless workflow reads', () => {
     const { client, fetcher } = setup(vi.fn(async path => path === '/api/v2/resources/export'
       ? new Response(JSON.stringify(raw), { status: mismatch === 'permission' ? 403 : 200 })
       : new Response(JSON.stringify(app()))));
-    await expect(client.get('w', 'v')).rejects.toThrow(/export/i);
+    await expect(client.get('116910ef-8aaa-4c9f-8cff-a760244dfb37', 'v')).rejects.toThrow(/export/i);
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it('omits all-node status payloads so small result pages remain readable', async () => {
     const nodePage = { data: [{ id: 'small-node', result: { parcel_count: 8 } }], total: 2, total_pages: 2, page: 2, per_page: 1 };
     const { client } = setup(vi.fn(async path => new Response(JSON.stringify(path.endsWith('/status')
-      ? { status: true, logs: [], nodes: [{ id: 'large-node', result: 'x'.repeat(80_000) }] } : nodePage))));
+      ? { status: true, logs: [], nodes: [{ id: 'large-node', result: 'x'.repeat(80_000) }] } : path === '/api/workflow_executions/execution' ? {status:'success',executed:true} : nodePage))));
     const result = await client.execution('execution', 2, 1);
-    expect(result.status).toEqual({ status: true, logs: [] });
+    expect(result.status).toEqual({ status: true, execution_status: 'success', approval_request_id: null, logs: [] });
     expect(result.nodes).toEqual(nodePage);
     expect(JSON.stringify(result).length).toBeLessThan(1000);
   });

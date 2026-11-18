@@ -54,7 +54,10 @@ const MUST_BE_DESTRUCTIVE = [
   'drop_table', 'drop_table_column', 'manage_theme', 'manage_workspace_groups',
   'run_queries', 'run_query',
   'apply_workflow_spec', 'run_workflow',
-  'delete_workflow_node',
+  'delete_workflow_node', 'stop_workflow_execution', 'resolve_workflow_approval', 'cancel_workflow_approval',
+  'create_workflow_schedule', 'update_workflow_schedule', 'set_workflow_schedule_active', 'delete_workflow_schedule',
+  'set_workflow_webhook_enabled', 'preview_workflow_node', 'set_workflow_packages', 'rebuild_workflow_bundle',
+  'set_workflow_setup_script', 'set_workflow_webhook_parameters', 'upsert_workflow_agent_tool',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query', 'update_app_version',
   'invite_workspace_user', 'update_workspace_user', 'archive_workspace_user', 'unarchive_workspace_user',
@@ -80,10 +83,10 @@ describe('tool annotations', () => {
   const tools = registeredTools();
 
   it.each([
-    { legacy: false, render: false, count: 130 },
-    { legacy: true, render: false, count: 135 },
-    { legacy: false, render: true, count: 131 },
-    { legacy: true, render: true, count: 136 },
+    { legacy: false, render: false, count: 158 },
+    { legacy: true, render: false, count: 163 },
+    { legacy: false, render: true, count: 159 },
+    { legacy: true, render: true, count: 164 },
   ])('publishes complete wire annotations with legacy=$legacy and render=$render', async ({ legacy, render, count }) => {
     const previous = process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
     process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = String(legacy);
@@ -153,6 +156,9 @@ describe('tool annotations', () => {
       'list_datasource_datasets', 'list_datasource_tables', 'list_datasource_columns', 'list_datasource_sheets',
       'list_datasource_spreadsheets', 'get_datasource_endpoint_schema', 'list_datasource_collections',
       'list_datasource_schemas', 'list_datasource_tenants',
+      'create_workflow_schedule', 'update_workflow_schedule', 'set_workflow_schedule_active', 'resolve_workflow_approval',
+      'set_workflow_webhook_enabled', 'preview_workflow_node', 'set_workflow_packages', 'rebuild_workflow_bundle',
+      'search_workflow_packages', 'get_workflow_package',
     ].sort());
   });
 

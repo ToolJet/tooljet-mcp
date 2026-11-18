@@ -22,6 +22,7 @@ export function workflowReadiness(graph: Definition, structuralErrors: Issue[]):
   const blockers: Issue[] = [];
   for (const node of graph.nodes.filter(node => reachable.has(node.id))) {
     const issues: string[] = [];
+    if (node.type === 'query' && node.data.looped === true && (typeof node.data.iterationValuesCode !== 'string' || !node.data.iterationValuesCode.trim())) issues.push('Loop requires an array expression.');
     if (node.type === 'human') issues.push(...humanConfigurationErrors(node.data));
     if (node.type === 'wait') {
       const duration = node.data.durationSeconds;

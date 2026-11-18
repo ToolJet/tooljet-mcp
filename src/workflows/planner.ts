@@ -61,9 +61,10 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
     if (claimedNames.has(name) || queries.some(q => q.name === name && q.id !== oldQuery?.id)) throw new Error(`Duplicate query name: ${name}`);
     claimedNames.add(name);
     const requestedOptions = item.role === 'agent-model' ? item.options : input!.type === 'javascript' || input!.type === 'loop' ? { ...(oldQuery?.options as Record<string, unknown> ?? {}), code: input!.code } : input!.options;
-    const options = item.role === 'agent-model' ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
+    let options = item.role === 'agent-model' ? structuredClone(requestedOptions) : normalizeQueryOptions(kind, requestedOptions);
     // Workflow RunJS uses a server-side IIFE and workflow state, not browser
     // RunJS parameters. Validate that code separately, retaining common option checks.
+    if (kind === 'workflows') options = (await client.resolveReference(options, snapshot)).options;
     if (item.role === 'workflow-node' && kind === 'runjs') assertWorkflowJavaScript(options.code, label);
     if (item.role === 'workflow-node') {
       const validation = validateQueryOptions(kind, options, 'workflow');
@@ -72,6 +73,15 @@ export async function prepare(client: WorkflowClient, workflowId: string, versio
     }
     writes.push({ node_id: item.node_id, definition_id: item.definition_id, existing_id: oldQuery?.id, name, dataSourceId: dataSourceId ?? '', kind, options });
     if (!existingMapping && !compiled.graph.queries.some(mapping => mapping.idOnDefinition === item.definition_id)) compiled.graph.queries.push({ idOnDefinition: item.definition_id, id: `pending:${item.node_id}` });
+  }
+  const stateNames = new Set<string>();
+  for (const node of compiled.graph.nodes) {
+    const mapping = compiled.graph.queries.find(mapping => mapping.idOnDefinition === node.data.idOnDefinition);
+    const write = writes.find(write => write.node_id === node.id);
+    const name = node.type === 'query' ? write?.name ?? queries.find(query => query.id === mapping?.id)?.name : node.data.nodeName;
+    if (typeof name !== 'string' || !name.trim()) continue;
+    if (stateNames.has(name)) throw new Error(`Duplicate workflow node name: ${name}`);
+    stateNames.add(name);
   }
   const queryIds = new Set([...queries.map(q => q.id), ...writes.filter(q => !q.existing_id).map(q => `pending:${q.node_id}`)]);
   const validation = validateGraph(compiled.graph, queryIds);

@@ -1,7 +1,7 @@
 import { Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { conditionBranches, elseBranch, workflowInputs, humanConfig, conditionHandles, humanConfigurationErrors } from './nodeContracts.js';
+import { conditionBranches, elseBranch, workflowInputs, humanConfig, conditionHandles, humanConfigurationErrors, workflowName } from './nodeContracts.js';
 
 const ref = z.string().min(1).max(100);
 const base = { ref, existing_id: z.string().uuid().optional(), label: z.string().max(100).optional(), position: z.object({ x: z.number().finite(), y: z.number().finite() }).optional() };
@@ -10,21 +10,24 @@ const agentModel = z.object(query).strict();
 export const nodeSchema = z.discriminatedUnion('type', [
   z.object({ ...base, type: z.literal('start') }).strict(),
   z.object({ ...base, type: z.literal('javascript'), name: query.name, code: z.string().min(1) }).strict(),
-  z.object({ ...base, type: z.literal('query'), ...query }).strict(),
-  z.object({ ...base, type: z.literal('loop'), name: query.name, iteration_values_code: z.string().min(1), code: z.string().min(1) }).strict(),
-  z.object({ ...base, type: z.literal('condition'), code: z.string().min(1).optional(), conditions: conditionBranches.optional(), else_branch: elseBranch.optional() }).strict(),
-  z.object({ ...base, type: z.literal('filter'), name: query.name, input_expression: z.string().min(1), predicate_expression: z.string().min(1) }).strict(),
-  z.object({ ...base, type: z.literal('wait'), name: query.name, duration_seconds: z.number().finite().min(1).max(2592000) }).strict(),
-  z.object({ ...base, type: z.literal('human'), name: query.name, ...humanConfig }).strict(),
-  z.object({ ...base, type: z.literal('response'), code: z.string().min(1), status_code: z.number().int().min(100).max(599).optional() }).strict(),
-  z.object({ ...base, type: z.literal('agent'), system_prompt: z.string().optional(), user_prompt: z.string().optional(), output_format: z.record(z.string(), z.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict(),
+  z.object({ ...base, type: z.literal('query'), ...query, looped: z.boolean().optional(), iteration_values_code: z.string().refine(value => !!value.trim(), 'Loop requires an array expression.').optional() }).strict(),
+  z.object({ ...base, type: z.literal('loop'), name: query.name, iteration_values_code: z.string().refine(value => !!value.trim(), 'Loop requires an array expression.'), code: z.string().min(1) }).strict(),
+  z.object({ ...base, type: z.literal('condition'), name: workflowName.optional(), code: z.string().min(1).optional(), conditions: conditionBranches.optional(), else_branch: elseBranch.optional() }).strict(),
+  z.object({ ...base, type: z.literal('filter'), name: workflowName, input_expression: z.string().min(1), predicate_expression: z.string().min(1) }).strict(),
+  z.object({ ...base, type: z.literal('wait'), name: workflowName, duration_seconds: z.number().finite().min(1).max(2592000) }).strict(),
+  z.object({ ...base, type: z.literal('human'), name: workflowName, ...humanConfig }).strict(),
+  z.object({ ...base, type: z.literal('response'), name: workflowName.optional(), status_code_expression: z.string().min(1).optional(), code: z.string().min(1), status_code: z.number().int().min(100).max(599).optional() }).strict(),
+  z.object({ ...base, type: z.literal('agent'), name: workflowName.optional(), system_prompt: z.string().optional(), user_prompt: z.string().optional(), output_format: z.record(z.string(), z.unknown()).nullable().optional(), model: agentModel.nullable().optional() }).strict(),
 ]);
 export const specSchema = z.object({
   schema_version: z.literal(1).default(1),
   nodes: z.array(nodeSchema).max(200).default([]),
   edges: z.array(z.object({ ref, existing_id: z.string().optional(), from: ref, to: ref, port: z.string().min(1) }).strict()).max(500).default([]),
+  agent_tools: z.array(z.object({ ref, existing_id: z.string().optional(), from: ref, to: ref }).strict()).default([]),
+  webhook_parameters: z.array(z.object({ key: workflowName, dataType: z.enum(['string','number','object','array','boolean','null']) }).strict()).optional(),
   remove_node_ids: z.array(z.string()).default([]),
   remove_edge_ids: z.array(z.string()).default([]),
+  setup_script: z.object({ javascript: z.string().optional(), python: z.string().optional() }).strict().optional(),
   workflow_inputs: workflowInputs.optional(),
   test_parameters: z.record(z.string(), z.unknown()).optional(),
 }).strict();
@@ -75,9 +78,10 @@ export function validateGraph(graph: Definition, queryIds?: Set<string>) {
     const source = nodes.get(edge.source), target = nodes.get(edge.target), path = `edges.${edge.id}`;
     if (!source || !target) { error('missing_endpoint', path, 'Edge endpoint does not exist.'); continue; }
     if (isAttachmentEdge(edge)) {
-      if (edge.targetHandle === 'ai-model' && !(source.type === 'query' && source.data.isChildOfAgent === true && source.data.agentConnectionType === 'ai-model' && target.type === 'agent')) {
-        error('invalid_attachment', path, 'AI model attachment must connect an Agent model query child to an Agent.');
+      if (!(source.type === 'query' && source.data.isChildOfAgent === true && source.data.agentConnectionType === edge.targetHandle && target.type === 'agent')) {
+        error('invalid_attachment', path, 'Agent attachment must connect a matching query child to an Agent.');
       }
+      if (graph.edges.filter(candidate => isAttachmentEdge(candidate) && candidate.source === source.id).length > 1 || flowEdges.some(candidate => candidate.source === source.id || candidate.target === source.id)) error('invalid_attachment', path, 'An attached query belongs to one Agent and cannot also participate in control flow.');
       continue;
     }
     if (target.type === 'input') error('start_inbound', path, 'Start cannot have inbound edges.');
@@ -142,7 +146,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
       try { new Script(input.type === 'condition' ? `(${input.code})` : `(async function() {${input.code}\n})`); }
       catch { throw new Error(`Invalid JavaScript syntax in node ${input.ref}.`); }
     }
-    if (input.type === 'loop') {
+    if ((input.type === 'loop' || input.type === 'query') && input.iteration_values_code !== undefined) {
       try { new Script(`(async function() {${input.iteration_values_code}\n})`); }
       catch { throw new Error(`Invalid iteration JavaScript syntax in node ${input.ref}.`); }
     }
@@ -178,7 +182,15 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
       }
       if (data.code === undefined && !Array.isArray(data.conditions)) throw new Error('Condition requires code or conditions.');
     }
-    if (input.type === 'response') data.code = input.code;
+    if (input.type === 'condition' || input.type === 'response') data.nodeName = input.name ?? old?.data.nodeName ?? input.ref;
+    if (input.type === 'response') {
+      data.code = input.code;
+      if (input.status_code_expression !== undefined) {
+        if (input.status_code !== undefined) throw new Error('Use status_code or status_code_expression, not both.');
+        new Script(`(${input.status_code_expression})`);
+        data.statusCode = { fxActive: true, value: input.status_code_expression };
+      }
+    }
     if (input.type === 'filter') {
       new Script(`(${input.input_expression})`); new Script(`(${input.predicate_expression})`);
       Object.assign(data, { nodeName: input.name, inputExpression: input.input_expression, predicateExpression: input.predicate_expression });
@@ -196,6 +208,10 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
     if (input.type === 'response' && (input.status_code !== undefined || data.statusCode === undefined)) {
       data.statusCode = { fxActive: false, value: String(input.status_code ?? 200) };
     }
+    if (input.type === 'query') {
+      if (input.looped !== undefined) data.looped = input.looped;
+      if (input.iteration_values_code !== undefined) data.iterationValuesCode = input.iteration_values_code;
+    }
     if (input.type === 'loop') {
       data.looped = true;
       data.iterationValuesCode = input.iteration_values_code;
@@ -204,7 +220,7 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
       const oldOptions = old?.data.options && typeof old.data.options === 'object' && !Array.isArray(old.data.options)
         ? old.data.options as Record<string, unknown> : {};
       // nodeName is a runtime identifier, independent of the visual label.
-      data.nodeName = old?.data.nodeName ?? input.ref;
+      data.nodeName = input.name ?? old?.data.nodeName ?? input.ref;
       data.options = {
         ...oldOptions,
         systemPrompt: input.system_prompt ?? oldOptions.systemPrompt ?? '',
@@ -270,6 +286,29 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
       if (n.type === 'query') n.data.errorHandler = true;
     }
   }
+  for (const attachment of spec.agent_tools) {
+    if (edge_ids[attachment.ref]) throw new Error('Duplicate edge ref.');
+    const source = node_ids[attachment.from] ?? attachment.from;
+    const target = node_ids[attachment.to] ?? attachment.to;
+    const queryNode = graph.nodes.find(node => node.id === source);
+    const agent = graph.nodes.find(node => node.id === target);
+    if (queryNode?.type !== 'query' || agent?.type !== 'agent') throw new Error('Agent tools must connect a query to an Agent.');
+    if (queryNode.data.agentConnectionType === 'ai-model') throw new Error('A model cannot also be an Agent tool.');
+    if (controlFlowEdges(graph).some(edge => edge.source === source || edge.target === source)) throw new Error('Agent tool queries cannot also have control-flow connections.');
+    const old = attachment.existing_id ? graph.edges.find(edge => edge.id === attachment.existing_id) : graph.edges.find(edge => edge.source === source && edge.target === target && edge.targetHandle === 'tool');
+    if (attachment.existing_id && (!old || old.targetHandle !== 'tool')) throw new Error('Unknown Agent tool attachment.');
+    const id = old?.id ?? ids?.edge_ids[attachment.ref] ?? randomUUID();
+    const edge = { ...old, id, source, target, sourceHandle: 'output', targetHandle: 'tool', type: 'custom', data: { direction: 'vertical' } };
+    if (old) graph.edges[graph.edges.indexOf(old)] = edge; else graph.edges.push(edge);
+    Object.assign(queryNode.data, { isChildOfAgent: true, agentConnectionType: 'tool' });
+    edge_ids[attachment.ref] = id;
+  }
+  // Detaching or moving a tool must restore the previous query to an ordinary node.
+  for (const node of graph.nodes) {
+    if (node.data.agentConnectionType === 'tool' && !graph.edges.some(edge => edge.source === node.id && edge.targetHandle === 'tool')) {
+      delete node.data.isChildOfAgent; delete node.data.agentConnectionType;
+    }
+  }
   graph.queries = graph.queries.filter(q => !removedDefinitionIds.includes(q.idOnDefinition) || graph.nodes.some(n => n.data.idOnDefinition === q.idOnDefinition));
   // Place new nodes by dependency depth, keeping editor-owned positions unchanged.
   const depths = new Map(graph.nodes.map(n => [n.id, 0]));
@@ -288,6 +327,27 @@ export function compileGraph(current: Definition, spec: WorkflowSpec, ids?: Grap
     while (placed.some(other => other.position && Math.abs(other.position.x - x) < 300 && Math.abs(other.position.y - y) < 160)) y += 180;
     n.position = { x, y }; placed.push(n);
   }
+  for (const previous of current.nodes) {
+    const updated = graph.nodes.find(node => node.id === previous.id);
+    const oldName = previous.data.nodeName;
+    const newName = updated?.data.nodeName;
+    if (typeof oldName !== 'string' || typeof newName !== 'string' || oldName === newName) continue;
+    for (const edge of controlFlowEdges(graph).filter(edge => edge.source === previous.id)) {
+      const target = graph.nodes.find(node => node.id === edge.target);
+      if (target?.type !== 'filter' || typeof target.data.inputExpression !== 'string') continue;
+      // Explicit expressions in this patch already name the intended source.
+      if (spec.nodes.some(input => input.existing_id === target.id && input.type === 'filter')) continue;
+      const expression = target.data.inputExpression;
+      const trimmed = expression.trimStart();
+      const suffix = trimmed.slice(oldName.length);
+      if (trimmed.startsWith(oldName) && (!suffix.trim() || suffix.startsWith('.') || suffix.startsWith('[') || suffix.startsWith('?.'))) {
+        const source = /^[A-Za-z_$][\w$]*$/.test(newName) ? newName : `globalThis[${JSON.stringify(newName)}]`;
+        target.data.inputExpression = expression.slice(0, expression.length - trimmed.length) + source + suffix;
+      }
+    }
+  }
+  if (spec.webhook_parameters !== undefined) graph.webhookParams = structuredClone(spec.webhook_parameters);
+  if (spec.setup_script !== undefined) graph.setupScript = spec.setup_script;
   if (spec.workflow_inputs !== undefined) graph.workflowInputs = structuredClone(spec.workflow_inputs);
   if (spec.test_parameters !== undefined) graph.defaultParams = JSON.stringify(spec.test_parameters);
   return { graph, node_ids, edge_ids, model_ids, query_nodes };
@@ -308,17 +368,17 @@ export const nodeCatalog = {
   nodes: [
     { type: 'start', renderer: 'input', ports: ['default'] },
     { type: 'javascript', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'code'] },
-    { type: 'query', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'datasource_id', 'options'] },
+    { type: 'query', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'datasource_id', 'options', 'looped', 'iteration_values_code'] },
     { type: 'loop', renderer: 'query', ports: ['success', 'failure'], fields: ['name', 'iteration_values_code', 'code'] },
-    { type: 'condition', renderer: 'if-condition', ports: ['condition id', 'false (else)'], fields: ['code (legacy only)', 'conditions', 'else_branch'] },
+    { type: 'condition', renderer: 'if-condition', ports: ['condition id', 'false (else)'], fields: ['name', 'code (legacy only)', 'conditions', 'else_branch'] },
     { type: 'filter', renderer: 'filter', ports: ['default'], fields: ['name', 'input_expression', 'predicate_expression'] },
     { type: 'wait', renderer: 'wait', ports: ['default'], fields: ['name', 'duration_seconds'] },
     { type: 'human', renderer: 'human', ports: ['outcome key'], fields: ['name', 'outcomes', 'input_schema', 'approvers', 'timeout', 'reminders', 'notification'] },
-    { type: 'response', renderer: 'output', ports: [], fields: ['code', 'status_code'] },
-    { type: 'agent', renderer: 'agent', ports: ['default'], fields: ['system_prompt', 'user_prompt', 'output_format', 'model'] },
+    { type: 'response', renderer: 'output', ports: [], fields: ['name', 'code', 'status_code', 'status_code_expression'] },
+    { type: 'agent', renderer: 'agent', ports: ['default'], fields: ['name', 'system_prompt', 'user_prompt', 'output_format', 'model'] },
   ],
   edit_semantics: 'Patch. Use existing_id to edit nodes/edges; edge endpoints may use existing node IDs. Omitted objects are preserved. Removal requires explicit IDs and incident edge removal.',
   workflow_inputs: 'Use workflow_inputs to replace typed declarations; omission preserves them and [] clears them. test_parameters remains separate.',
-  advanced_nodes: 'Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Human approval resolution remains in ToolJet.',
-  limitations: ['Agent tool connections are not authored', 'No publishing or trigger setup', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Unknown node types are preserved but not authored'],
+  advanced_nodes: 'Filter expressions use value and index in the predicate. Human and Wait suspend durably and cannot run as child workflows. Use resolve_workflow_approval for an explicitly requested decision. Agent tools use agent_tools attachments.',
+  limitations: ['Publishing uses release_app; management tools configure schedules and webhooks', 'No concurrent-edit protection', 'No automatic execution during authoring', 'Unknown node types are preserved but not authored'],
 };

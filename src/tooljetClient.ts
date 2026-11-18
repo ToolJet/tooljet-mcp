@@ -1,3 +1,4 @@
+import { resolveWorkflowReference } from './workflowReference.js';
 import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
 import { resolveComponentLibrary, type ResolvedComponentLibrary } from './componentLibrary.js';
@@ -645,7 +646,7 @@ export interface ToolJetClient {
   branchId?: string;
   appVersions: ReturnType<typeof createAppVersionLifecycle>;
   workflows: WorkflowClient;
-  assertWorkflowQueryTarget(options: Record<string, unknown>): Promise<void>;
+  assertWorkflowQueryTarget(options: Record<string, unknown>, consumerVersionId?: string): Promise<void>;
   listWorkspaces(): Promise<Workspace[]>;
   useWorkspace(workspaceId: string): Promise<Workspace>;
   listWorkspaceApps(params?: { page?: number; searchText?: string; folderId?: string }): Promise<Record<string, unknown>>;
@@ -2745,7 +2746,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const kind = params.kind ?? (await resolveDatasourceKind(params.versionId, params.dataSourceId));
     if (kind === 'workflows') {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
-      await assertWorkflowQueryTarget(params.options);
+      params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
     }
     await assertDatasourceAllowed(params.dataSourceId, params.versionId);
     const res = await auth.authedFetch(
@@ -2775,7 +2776,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const batchCheck = (async () => {
       const datasources = await listDatasources(params.versionId);
       for (const query of params.queries) {
-        if (datasources.find(source => source.id === query.dataSourceId)?.kind === 'workflows') await assertWorkflowQueryTarget(query.options);
+        if (datasources.find(source => source.id === query.dataSourceId)?.kind === 'workflows') await assertWorkflowQueryTarget(query.options, params.versionId);
       }
       await Promise.all(params.queries.map(q => assertDatasourceAllowed(q.dataSourceId)));
       return undefined;
@@ -3222,7 +3223,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
     if (query.kind === 'workflows') {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
-      await assertWorkflowQueryTarget(params.options);
+      params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
     }
     const body: Record<string, unknown> = { options: params.options };
     if (params.name !== undefined) body.name = params.name;
@@ -3254,23 +3255,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     }
   }
 
-  async function assertWorkflowQueryTarget(raw: Record<string, unknown>): Promise<void> {
-    assertWorkflowQueryOptions(raw);
-    const options = normalizeWorkflowQueryOptions(raw);
-    const workflowId = options.workflowId as string;
-    const versionId = options.workflowVersionId as string | undefined;
-    const path = versionId ? `/api/v2/apps/${encodeURIComponent(workflowId)}/versions/${encodeURIComponent(versionId)}`
-      : `/api/apps/${encodeURIComponent(workflowId)}`;
-    const response = await auth.authedFetch(path);
-    await assertOk(response, 'verify workflow query target');
-    const app = await response.json();
-    if (app?.id !== workflowId || app.type !== 'workflow' ||
-        (app.organizationId ?? app.organization_id) !== await auth.getOrganizationId()) {
-      throw new Error('Workflow query target must be an accessible workflow in the active workspace.');
-    }
-    if (versionId && (app.editing_version ?? app.editingVersion)?.id !== versionId) {
-      throw new Error('Workflow query version does not belong to the selected workflow.');
-    }
+
+  async function assertWorkflowQueryTarget(raw: Record<string, unknown>, consumerVersionId?: string): Promise<void> {
+    await resolveWorkflowReference(auth, raw, consumerVersionId);
   }
 
   async function updateQueryDatasource(params: {

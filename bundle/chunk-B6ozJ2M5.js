@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as tableQuotaError } from "./chunk-C1Uan0hB.js";
-import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json$1, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-Dl7vSZwt.js";
-import { l as locales_exports, c as core_exports, e as en_default } from "./chunk-RdBCD2ZE.js";
+import { _ as __export, R as util_exports, a as _uppercase, b as _trim, cJ as treeifyError, c as _toUpperCase, e as _toLowerCase, cK as toJSONSchema, f as _startsWith, g as _slugify, h as _size, cS as registry, S as regexes_exports, i as _regex, j as _property, cU as prettifyError, k as _positive, l as _overwrite, n as _normalize, o as _nonpositive, p as _nonnegative, q as _negative, r as _multipleOf, s as _minSize, t as _minLength, u as _mime, v as _maxSize, w as _maxLength, x as _lte, y as _lt, z as _lowercase, A as _length, B as _includes, C as _gte, D as _gt, aY as globalRegistry, aR as formatError, aQ as flattenError, E as _endsWith, d6 as config, at as clone, dB as TimePrecision, dC as NEVER, dE as $output, dF as $input, dG as $brand, du as _coercedString, dv as _coercedNumber, dx as _coercedBoolean, dy as _coercedBigint, dw as _coercedDate, e5 as tableQuotaError } from "./chunk-BhoYgPP_.js";
+import { x as xor, c as xid, _ as _void2, u as uuidv7, d as uuidv6, e as uuidv4, f as uuid, g as url, i as unknown, j as union, k as _undefined2, l as ulid, m as uint64, n as uint32, o as tuple, p as transform, q as templateLiteral, s as symbol, v as superRefine, w as success, y as stringbool, z as stringFormat, A as string, B as strictObject, C as set, D as safeParseAsync, E as safeParse, F as safeEncodeAsync, G as safeEncode, H as safeDecodeAsync, I as safeDecode, J as refine, K as record, L as readonly, M as promise, N as preprocess, O as prefault, P as pipe, Q as partialRecord, R as parseAsync, S as parse, T as optional, U as object, V as number, W as nullish, X as nullable, Y as _null2, Z as nonoptional, $ as never, a0 as nativeEnum, a1 as nanoid, a2 as nan, a3 as meta2, a4 as map, a5 as mac, a6 as looseRecord, a7 as looseObject, a8 as literal, a9 as lazy, aa as ksuid, ab as keyof, ac as jwt, ad as json$1, ae as iso_exports, af as ipv6, ag as ipv4, ah as invertCodec, ai as intersection, aj as int64, ak as int32, al as int, am as _instanceof, an as httpUrl, ao as hostname, ap as hex, aq as hash, ar as guid, as as _function, at as float64, au as float32, av as file, aw as exactOptional, ax as _enum, ay as encodeAsync, az as encode, aA as emoji, aB as email, aC as e164, aD as discriminatedUnion, aE as describe2, aF as decodeAsync, aG as decode, aH as date2$1, aI as custom, aJ as cuid2, aK as cuid, aL as codec, aM as cidrv6, aN as cidrv4, aO as check, aP as _catch, aQ as boolean, aR as bigint, aS as base64url, aT as base64, aU as array, aV as any, aW as _default, aX as _ZodString, aY as ZodXor, aZ as ZodXID, a_ as ZodVoid, a$ as ZodUnknown, b0 as ZodUnion, b1 as ZodUndefined, b2 as ZodUUID, b3 as ZodURL, b4 as ZodULID, b5 as ZodType, b6 as ZodTuple, b7 as ZodTransform, b8 as ZodTemplateLiteral, b9 as ZodSymbol, ba as ZodSuccess, bb as ZodStringFormat, bc as ZodString, bd as ZodSet, be as ZodRecord, bf as ZodRealError, bg as ZodReadonly, bh as ZodPromise, bi as ZodPreprocess, bj as ZodPrefault, bk as ZodPipe, bl as ZodOptional, bm as ZodObject, bn as ZodNumberFormat, bo as ZodNumber, bp as ZodNullable, bq as ZodNull, br as ZodNonOptional, bs as ZodNever, bt as ZodNanoID, bu as ZodNaN, bv as ZodMap, bw as ZodMAC, bx as ZodLiteral, by as ZodLazy, bz as ZodKSUID, bA as ZodJWT, bB as ZodIntersection, bC as ZodISOTime, bD as ZodISODuration, bE as ZodISODateTime, bF as ZodISODate, bG as ZodIPv6, bH as ZodIPv4, bI as ZodGUID, bJ as ZodFunction, bK as ZodFile, bL as ZodExactOptional, bM as ZodError, bN as ZodEnum, bO as ZodEmoji, bP as ZodEmail, bQ as ZodE164, bR as ZodDiscriminatedUnion, bS as ZodDefault, bT as ZodDate, bU as ZodCustomStringFormat, bV as ZodCustom, bW as ZodCodec, bX as ZodCatch, bY as ZodCUID2, bZ as ZodCUID, b_ as ZodCIDRv6, b$ as ZodCIDRv4, c0 as ZodBoolean, c1 as ZodBigIntFormat, c2 as ZodBigInt, c3 as ZodBase64URL, c4 as ZodBase64, c5 as ZodArray, c6 as ZodAny, c7 as checks_exports, c8 as schemas_exports } from "./chunk-Br5ChZ91.js";
+import { l as locales_exports, c as core_exports, e as en_default } from "./chunk--KmhL6ch.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -361,7 +361,7 @@ function detectVersion(schema, defaultTarget) {
   }
   return defaultTarget ?? "draft-2020-12";
 }
-function resolveRef$1(ref, ctx) {
+function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
@@ -412,7 +412,7 @@ function convertBaseSchema(schema, ctx) {
       });
     }
     ctx.processing.add(refPath);
-    const resolved = resolveRef$1(refPath, ctx);
+    const resolved = resolveRef(refPath, ctx);
     const zodSchema2 = convertSchema(resolved, ctx);
     ctx.refs.set(refPath, zodSchema2);
     ctx.processing.delete(refPath);
@@ -794,17 +794,17 @@ var schemas = /* @__PURE__ */ new Map();
 function exposeActions(source, definitions, selector = "action") {
   source.description += " Individually exposed operations: " + definitions.map((action) => action.name).join(", ") + ".";
   const handler = source.handler;
-  return definitions.map(({ action, required: required2, optional: optional2 = [], ...definition }) => {
+  return definitions.map(({ action, required, optional: optional2 = [], ...definition }) => {
     let schema = schemas.get(definition.name);
     if (!schema) {
       const fields = {};
-      for (const key of [...required2, ...optional2]) {
+      for (const key of [...required, ...optional2]) {
         if (key === selector || !source.inputSchema[key])
           throw new Error(`Invalid action field: ${definition.name}.${key}`);
         fields[key] = source.inputSchema[key];
       }
-      schema = external_exports.object(fields).required(Object.fromEntries(required2.map((key) => [key, true]))).strict();
-      if (required2.includes("confirm"))
+      schema = external_exports.object(fields).required(Object.fromEntries(required.map((key) => [key, true]))).strict();
+      if (required.includes("confirm"))
         schema = schema.extend({ confirm: external_exports.literal(true) });
       schemas.set(definition.name, schema);
     }
@@ -822,230 +822,6 @@ function exposeActions(source, definitions, selector = "action") {
       }
     };
   });
-}
-createRequire(import.meta.url);
-var userRole = external_exports.enum(["admin", "builder", "end-user"]);
-var userStatus = external_exports.enum(["active", "archived", "invited"]);
-var listWorkspaceAppsInput = external_exports.object({
-  page: external_exports.number().int().positive().optional(),
-  search_text: external_exports.string().trim().max(100).describe("Filter by app name.").optional(),
-  folder_id: external_exports.string().uuid().describe("Folder ID returned by list_workspace_folders.").optional()
-}).strict();
-var listWorkspaceFoldersInput = external_exports.object({
-  search_text: external_exports.string().trim().max(100).describe("Case-insensitive folder-name search.").optional()
-}).strict();
-function listWorkspaceAppsTool(client) {
-  return {
-    name: "list_workspace_apps",
-    title: "List Workspace Apps",
-    strictInput: true,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: "List front-end apps in the workspace pinned to the current ToolJet connection, with pagination, app-name search, and optional folder_id filtering. Discover folder IDs with list_workspace_folders. Each app includes folders: [{id,name}] (empty when unfiled). The top-level folder describes the selected folder, or is null. meta.workspace_folder_count counts visible app folders; meta.folder_app_count counts matching apps in the selected folder (null without a folder filter). meta.total_count remains the workspace-wide count of matching apps even with folder_id; use meta.folder_app_count for the folder. This cannot inspect or switch to another workspace.",
-    inputSchema: listWorkspaceAppsInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceAppsInput.parse(input);
-        return ok(await client.listWorkspaceApps({ page: args.page, searchText: args.search_text, folderId: args.folder_id }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function listWorkspaceFoldersTool(client) {
-  return {
-    name: "list_workspace_folders",
-    title: "List Workspace Folders",
-    strictInput: true,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: "List visible front-end app folders in the workspace pinned to the current ToolJet connection. Returns folders: [{id,name,app_count}] and meta.total_count (matching folders). app_count counts apps visible to you. search_text filters folder names, not app names. Includes empty folders when ToolJet permits you to see them. Pass a returned id as folder_id to list_workspace_apps to read that folder\u2019s apps with pagination and app-name search. OAuth connections require the apps scope; existing ToolJet permissions still apply.",
-    inputSchema: listWorkspaceFoldersInput.shape,
-    async handler(input) {
-      try {
-        const args = listWorkspaceFoldersInput.parse(input);
-        return ok(await client.listWorkspaceFolders({ searchText: args.search_text }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function listWorkspaceUsersTool(client) {
-  return {
-    name: "list_workspace_users",
-    title: "List Workspace Users",
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: false
-    },
-    description: "List users in the workspace pinned to the current ToolJet connection. Supports pagination, search, and status filtering. OAuth connections require the workspace_users scope.",
-    inputSchema: {
-      page: external_exports.number().int().positive().optional(),
-      search_text: external_exports.string().trim().max(100).optional(),
-      filter_status: userStatus.optional()
-    },
-    async handler(args) {
-      try {
-        return ok(await client.listWorkspaceUsers({
-          page: args.page,
-          searchText: args.search_text,
-          status: args.filter_status
-        }));
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-function required(value, label) {
-  if (!value)
-    throw new Error(`${label} is required for this action.`);
-  return value;
-}
-var manageWorkspaceUsersInput = external_exports.object({
-  action: external_exports.enum(["invite", "update", "archive", "unarchive"]),
-  organization_user_id: external_exports.string().uuid().optional(),
-  email: external_exports.string().email().optional(),
-  first_name: external_exports.string().trim().max(99).optional(),
-  last_name: external_exports.string().trim().max(99).optional(),
-  role: userRole.optional(),
-  group_ids: external_exports.array(external_exports.string().uuid()).max(100).optional(),
-  user_metadata: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
-  confirm: external_exports.boolean().optional()
-}).strict();
-function manageWorkspaceUsersTool(client) {
-  return {
-    name: "manage_workspace_users",
-    title: "Manage Workspace Users",
-    strictInput: true,
-    // invite is additive, but update overwrites a member's role and archive revokes their access to
-    // the workspace, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: true
-    },
-    description: "Manage users only in the workspace pinned to the current ToolJet connection. OAuth connections require the workspace_users scope. Invite, update, archive, and unarchive require confirm:true. Updates can change role, add existing custom group_ids while preserving all other memberships, and merge supplied user_metadata keys while preserving other keys. Empty group_ids never removes groups. first_name/last_name are only supported for invitations: editing an existing name requires a Super Admin in ToolJet and is refused by this workspace-scoped tool before any mutation. Updates are read back before success is reported. Use manage_workspace_groups remove_member for explicit membership removal. Updates cannot change email or passwords. Changing a role to end-user also transfers any apps owned by that user to the acting admin under ToolJet's existing behavior; disclose this before confirmation. Invite accepts email, optional names/role/group_ids; archive/unarchive accepts only organization_user_id. Never substitute role or membership changes for a rejected name edit, or bypass the connection owner's ToolJet permissions.",
-    inputSchema: manageWorkspaceUsersInput.shape,
-    async handler(input) {
-      try {
-        const args = manageWorkspaceUsersInput.parse(input);
-        const allowed = args.action === "invite" ? ["email", "first_name", "last_name", "role", "group_ids"] : args.action === "update" ? ["organization_user_id", "first_name", "last_name", "role", "group_ids", "user_metadata"] : ["organization_user_id"];
-        for (const key of Object.keys(args)) {
-          if (!["action", "confirm", ...allowed].includes(key))
-            throw new Error(`${key} is not supported for ${args.action}; no changes were made.`);
-        }
-        if (args.action === "update" && (args.first_name !== void 0 || args.last_name !== void 0)) {
-          throw new Error("Name changes require a Super Admin and are not supported by this workspace-scoped tool. No changes were made. Ask a Super Admin to edit the name in ToolJet.");
-        }
-        if (args.confirm !== true) {
-          throw new Error(`${args.action} requires confirm:true after checking the exact workspace user.`);
-        }
-        if (args.action === "invite") {
-          await client.inviteWorkspaceUser({
-            email: required(args.email, "email"),
-            role: args.role ?? "end-user",
-            firstName: args.first_name,
-            lastName: args.last_name,
-            groupIds: args.group_ids
-          });
-          return ok({ invited: true, email: args.email });
-        }
-        const organizationUserId = required(args.organization_user_id, "organization_user_id");
-        if (args.action === "archive" || args.action === "unarchive") {
-          await client.setWorkspaceUserArchived(organizationUserId, args.action === "archive");
-          return ok({ organization_user_id: organizationUserId, status: args.action === "archive" ? "archived" : "active" });
-        }
-        if (args.first_name === void 0 && args.last_name === void 0 && args.role === void 0 && !args.group_ids?.length && args.user_metadata === void 0) {
-          throw new Error("update requires at least one changed field.");
-        }
-        const result = await client.updateWorkspaceUser(organizationUserId, {
-          firstName: args.first_name,
-          lastName: args.last_name,
-          role: args.role,
-          addGroupIds: args.group_ids,
-          userMetadata: args.user_metadata
-        });
-        return ok({
-          organization_user_id: organizationUserId,
-          ...result,
-          ...!result.updated ? { already_satisfied: true } : {}
-        });
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var workspaceUsers = [
-  {
-    action: "invite",
-    name: "invite_workspace_user",
-    title: "Invite Workspace User",
-    description: "Send an email invitation to the pinned workspace. Requires confirm:true for the exact recipient and access. Role defaults to end-user; optional group_ids add existing custom groups. Requires workspace_users OAuth scope and ToolJet permissions. Do not automatically retry an uncertain send.",
-    required: ["email", "confirm"],
-    optional: ["first_name", "last_name", "role", "group_ids"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }
-  },
-  {
-    action: "update",
-    name: "update_workspace_user",
-    title: "Update Workspace User",
-    description: "Change a workspace member role, add custom group memberships, or merge supplied metadata keys. Preserves other memberships and metadata; empty group_ids removes nothing. Changing role to end-user transfers owned apps to the acting admin: disclose before confirm:true. Cannot change names, email, or passwords. Requires workspace_users scope and ToolJet permissions; reads back updates.",
-    required: ["organization_user_id", "confirm"],
-    optional: ["role", "group_ids", "user_metadata"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "archive",
-    name: "archive_workspace_user",
-    title: "Archive Workspace User",
-    description: "Archive the exact member of the pinned workspace and revoke their workspace access. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
-    required: ["organization_user_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "unarchive",
-    name: "unarchive_workspace_user",
-    title: "Unarchive Workspace User",
-    description: "Restore an archived member to active status in the pinned workspace. Requires confirm:true, workspace_users OAuth scope, and ToolJet permissions.",
-    required: ["organization_user_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  }
-];
-function workspaceUserActionTools(source) {
-  return exposeActions(source, workspaceUsers);
-}
-createRequire(import.meta.url);
-function resolveRef(candidates, ref, kind, scope, describe = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
-  const byId = candidates.find((candidate) => candidate.id === ref);
-  if (byId)
-    return { ok: true, target: byId };
-  const byName = candidates.filter((candidate) => candidate.name === ref);
-  if (byName.length === 1)
-    return { ok: true, target: byName[0] };
-  if (byName.length > 1) {
-    return {
-      ok: false,
-      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
-    };
-  }
-  const available = candidates.map(describe).join(", ");
-  return {
-    ok: false,
-    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
-    // the re-read that caused the loop.
-    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
-  };
 }
 createRequire(import.meta.url);
 var FORMAT = "tooljet-catalog-parts-v1";
@@ -5755,19 +5531,13 @@ export {
   getCatalog as aC,
   getLegacyComponentReplacement as aD,
   fail as aE,
-  resolveRef as aF,
-  ok as aG,
-  exposeActions as aH,
-  inPackSet as aI,
-  listWorkspaceAppsTool as aJ,
-  listWorkspaceFoldersTool as aK,
-  listWorkspaceUsersTool as aL,
-  manageWorkspaceUsersTool as aM,
-  registerComponentSchemas as aN,
-  newPackSet as aO,
-  workspaceUserActionTools as aP,
-  readCatalogBytes as aQ,
-  allComponentSchemas as aR,
+  ok as aF,
+  exposeActions as aG,
+  inPackSet as aH,
+  registerComponentSchemas as aI,
+  newPackSet as aJ,
+  readCatalogBytes as aK,
+  allComponentSchemas as aL,
   newAsyncArrowScope as aa,
   setInnerComments as ab,
   newArrowHeadScope as ac,

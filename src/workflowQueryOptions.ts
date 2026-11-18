@@ -28,8 +28,8 @@ export function workflowQueryIssues(options: Record<string, unknown>): QueryVali
   for (const field of ['workflowId', 'workflowVersionId']) {
     const value = options[field];
     if (field === 'workflowVersionId' && (value === undefined || value === null)) continue;
-    if (typeof value !== 'string' || !UUID.test(value)) errors.push({ code: 'invalid_workflow_target', path: field,
-      message: `Workflow query options.${field} must be a literal workflow ${field === 'workflowId' ? 'ID from list_workflows/get_workflow' : 'version ID from list_app_versions/get_workflow'}. ` +
+    if (typeof value !== 'string' || (field === 'workflowId' ? !UUID.test(value) : !value.trim() || value.length > 255)) errors.push({ code: 'invalid_workflow_target', path: field,
+      message: `Workflow query options.${field} must be a literal workflow ${field === 'workflowId' ? 'ID from list_workflows/get_workflow' : 'version name, __current_branch__, __default_branch_draft__, or legacy version UUID'}. ` +
         'A query and its success/failure handlers do not establish the workflow mapping.' });
   }
   if (options.syncExecution !== undefined && typeof options.syncExecution !== 'boolean') {

@@ -1,3 +1,4 @@
+import { workflowOperationTools } from './workflowOperations.js';
 import { renderAuditAvailable } from '../renderAuditAvailability.js';
 import { appVersionLifecycleTools } from './appVersionLifecycle.js';
 import { listWorkspaceGroupsTool, manageWorkspaceGroupsTool, workspaceGroupActionTools } from './workspaceGroupManagement.js';
@@ -218,7 +219,7 @@ export function registerTools(
 
   tools.push(...managementActionTools(tools));
   tools.push(...datasourceMetadataTools(tools.find(tool => tool.name === 'inspect_datasource_schema')!));
-  tools.push(...workflowMutationTools(client));
+  tools.push(...workflowMutationTools(client), ...workflowOperationTools(client));
   tools.push(renameAppTool(client));
 
   const exposedTools = includeLegacySingularCreateTools()

@@ -286,7 +286,7 @@ export function applyAppPhaseTool(client: ToolJetClient): ToolDef {
         });
         // Resolve workflow targets before creating resources or moving an existing query's datasource.
         for (const query of preparedQueryOptions) {
-          if (query.kind === 'workflows') await client.assertWorkflowQueryTarget(query.options);
+          if (query.kind === 'workflows') await client.assertWorkflowQueryTarget(query.options, args.version_id);
         }
 
         const plannedPageMatches = new Map<string, AppSummary['pages'][number]>();

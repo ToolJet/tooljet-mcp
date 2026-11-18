@@ -1,14 +1,14 @@
 import { createRequire } from "node:module";
-import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-C3f6iF0Y.js";
-import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-NPyNDSUZ.js";
-import { aA as external_exports, aE as fail, aG as ok, aF as resolveRef } from "./chunk-isfY25ah.js";
-import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-tO42Apxg.js";
-import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-Dnb7j_j6.js";
-import { e5 as tableQuotaError } from "./chunk-C1Uan0hB.js";
-import { q as componentNameSchema, c as componentSlotSchema, I as pageIconSchema, y as resolveComponentLibrary, J as componentLibraryWarnings, E as validateAppStructure, K as lintPackItemSlots, D as lintComponents, d as decodeComponentParent, e as encodeComponentParent, L as namespaceReads } from "./chunk-BzoTtK4L.js";
-import { n as emptyLibraryHostError, T as unpinnedLibraries, N as suggestedHtmlHeight } from "./chunk-Btd7hqFK.js";
-import { m as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, e as assessQueryRead, g as resolveStaticBindings, f as resolvedReadRefusal, o as sameReadSource, p as extractRowCount, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote, v as validateQueryOptions, i as issueMessages, b as bindingSpans, z as declaredParameterDefaults } from "./chunk-CpwF2B9D.js";
-import { g as getDatasourceQuerySchema } from "./chunk-DuR3nfPV.js";
+import { p as pagesUsingQuery, l as lintPlannedApp, a as prepareQueryOptionsForWrite, m as matchPlannedPage, e as expandQueryLifecycles, v as validateEvents, n as navigationReorders, b as persistedEventSpecs, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, f as polishFlexRows } from "./chunk-Ci1Q6_Ld.js";
+import { F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, p as plannedCurrency, n as normalizeComponentSpec, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty } from "./chunk-CB78rxY_.js";
+import { e5 as tableQuotaError, e9 as resolveRef } from "./chunk-BhoYgPP_.js";
+import { T as TOOLJET_DB_DATA_TYPES, n as normalizeType, b as invalidSeedTimestamps, l as literalCanvasColor, c as componentRef, d as completedPartialWrites, e as currentBranchId, i as indexComponentReferences } from "./chunk-CBTtgcBQ.js";
+import { a as autoReadPreflight, N as NOT_CHECKED_AUTOMATICALLY } from "./chunk-CtwH5_77.js";
+import { aA as external_exports, aE as fail, aF as ok } from "./chunk-B6ozJ2M5.js";
+import { q as componentNameSchema, c as componentSlotSchema, I as pageIconSchema, y as resolveComponentLibrary, J as componentLibraryWarnings, E as validateAppStructure, K as lintPackItemSlots, D as lintComponents, d as decodeComponentParent, e as encodeComponentParent, L as namespaceReads } from "./chunk-DfrPsyM8.js";
+import { n as emptyLibraryHostError, T as unpinnedLibraries, N as suggestedHtmlHeight } from "./chunk-D1B51Cza.js";
+import { m as arithmeticWriteWarning, L as LARGE_READ_ROW_THRESHOLD, e as assessQueryRead, g as resolveStaticBindings, f as resolvedReadRefusal, o as sameReadSource, p as extractRowCount, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote, v as validateQueryOptions, i as issueMessages, b as bindingSpans, z as declaredParameterDefaults } from "./chunk-O6Dwgt9j.js";
+import { g as getDatasourceQuerySchema } from "./chunk-wRCgCKcA.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -2167,7 +2167,7 @@ function applyAppPhaseTool(client) {
         });
         for (const query of preparedQueryOptions) {
           if (query.kind === "workflows")
-            await client.assertWorkflowQueryTarget(query.options);
+            await client.assertWorkflowQueryTarget(query.options, args.version_id);
         }
         const plannedPageMatches = /* @__PURE__ */ new Map();
         const claimedPageIds = /* @__PURE__ */ new Set();
