@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
-import { e9 as resolveRef } from "./chunk-BhoYgPP_.js";
-import { aA as external_exports, aE as fail, aF as ok, ay as getComponentSchema, aG as exposeActions, aC as getCatalog, aB as internalComponentTypeNote, aD as getLegacyComponentReplacement } from "./chunk-B6ozJ2M5.js";
-import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, b as resolvePackSlot, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, g as lintComponentSpec, h as lintUnusableTextGeometry, j as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, n as lintRenderedGeometry, o as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, p as nearestCatalogKey, q as componentNameSchema, s as componentNameError, t as slotFindingKey, u as lintKanbanInteractions, v as lintShadKanbanCards, w as lintShadScheduleScale } from "./chunk-DfrPsyM8.js";
+import { aW as resolveRef, aR as resolvePackSlot, aE as getComponentSchema, aS as getCatalog, aP as internalComponentTypeNote, aT as getLegacyComponentReplacement } from "./chunk-BTCQQriH.js";
+import { ax as external_exports, ay as fail, az as ok, aA as exposeActions } from "./chunk-CUSUSGze.js";
+import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, e as encodeComponentParent, b as introducedLintFindings, l as lintComponentSlots, f as lintComponentSpec, g as lintUnusableTextGeometry, h as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, n as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, o as nearestCatalogKey, p as componentNameSchema, q as componentNameError, s as slotFindingKey, t as lintKanbanInteractions, u as lintShadKanbanCards, v as lintShadScheduleScale } from "./chunk-B0Cy3DPo.js";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
-import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-O6Dwgt9j.js";
+import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-DpFb8fvk.js";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-wRCgCKcA.js";
-import { A as retiredUi2Name, N as suggestedHtmlHeight } from "./chunk-D1B51Cza.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-DFfPGgwi.js";
+import { x as retiredUi2Name, H as suggestedHtmlHeight, I as componentLibraryChoices } from "./chunk-CDn2XiRi.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -2864,6 +2864,7 @@ function getComponentCatalogTool(client) {
     },
     description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
+      list_libraries: external_exports.boolean().optional().describe("List available shipped packs and published workspace libraries with their exact picker values and catalog prefixes."),
       type: external_exports.string().optional(),
       types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
       requests: external_exports.array(external_exports.object({
@@ -2880,6 +2881,8 @@ function getComponentCatalogTool(client) {
     },
     async handler(args) {
       try {
+        if (args?.list_libraries)
+          return ok({ component_libraries: componentLibraryChoices() });
         const singleType = args?.type;
         const typesList = args?.types ?? [];
         const batch = args?.requests ?? [];

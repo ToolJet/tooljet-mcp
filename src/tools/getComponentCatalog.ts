@@ -1,3 +1,4 @@
+import { componentLibraryChoices } from '../componentLibrary.js';
 import { mapKeyRefusal } from '../mapKeyGuard.js';
 import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
@@ -31,6 +32,7 @@ const DEFAULT_TYPED_SECTIONS: CatalogSection[] = [
 ];
 
 interface CatalogArgs {
+  list_libraries?: boolean;
   type?: string;
   types?: string[];
   requests?: Array<{
@@ -206,6 +208,7 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
       'authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar ' +
       'contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
+      list_libraries: z.boolean().optional().describe("List available shipped packs and published workspace libraries with their exact picker values and catalog prefixes."),
       type: z.string().optional(),
       types: z.array(z.string()).min(1).max(25).optional(),
       requests: z.array(z.object({
@@ -222,6 +225,7 @@ export function getComponentCatalogTool(client: ToolJetClient): ToolDef {
     },
     async handler(args: CatalogArgs) {
       try {
+        if (args?.list_libraries) return ok({ component_libraries: componentLibraryChoices() });
         const singleType = args?.type;
         const typesList = args?.types ?? [];
         const batch = args?.requests ?? [];

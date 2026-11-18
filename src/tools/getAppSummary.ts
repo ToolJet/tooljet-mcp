@@ -49,7 +49,7 @@ export function getAppSummaryTool(client: ToolJetClient): ToolDef {
       'the full widget schema. component_library says which library the app is built in: {library:"ui1"} is ToolJet UI 1.0 ' +
       '(the native widgets), {library:"ui2"} is ToolJet UI 2.0 (types starting with Shad, laid out in FlexContainers); ' +
       'source "saved" is the app\'s setting, "inferred" is read from its widgets. Build in that library unless the user ' +
-      'asks for the other. Field roots: app(app_id/name/version_id/component_library), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component' +
+      'asks for the other. component_libraries lists the active workspace picker choices (value, name, pack). Field roots: app(app_id/name/version_id/component_library/component_libraries), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component' +
       '(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and ' +
       'event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false ' +
       'returns page metadata only.',

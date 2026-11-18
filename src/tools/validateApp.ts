@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ToolJetClient } from '../tooljetClient.js';
 import { libraryPinErrors, validatePersistedAppSummary } from '../appValidation.js';
 import { ok, fail, type ToolDef } from './types.js';
+import { verifyLibrarySelection } from '../componentLibrary.js';
 import { literalCanvasColor } from '../appSettings.js';
 
 export function validateAppTool(client: ToolJetClient): ToolDef {
@@ -28,8 +29,10 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
     inputSchema: {
       app_id: z.string(),
       version_id: z.string().min(1).optional(),
+      expected_library_selection: z.string().optional().describe("Verify that the target version and newly authored widgets use this component library."),
+      existing_component_ids: z.array(z.string()).optional().describe("Component IDs present before the build. Existing widgets may belong to another library."),
     },
-    async handler(args: { app_id: string; version_id?: string }) {
+    async handler(args: { app_id: string; version_id?: string; expected_library_selection?: string; existing_component_ids?: string[] }) {
       try {
         const summary = args.version_id
           ? await client.getAppSummary(args.app_id, args.version_id)
@@ -50,6 +53,12 @@ export function validateAppTool(client: ToolJetClient): ToolDef {
           } catch {
             validation.not_checked.push('library pins (the version settings could not be read)');
           }
+        }
+        if (args.expected_library_selection) {
+          const errors = verifyLibrarySelection(summary.component_library, summary.pages, args.expected_library_selection, args.existing_component_ids ?? []);
+          validation.errors.push(...errors);
+          validation.checked.push('selected library and newly authored component types');
+          return ok({ ...validation, ok: validation.errors.length === 0, component_library_ok: errors.length === 0 });
         }
         validation.ok = validation.errors.length === 0;
         return ok(validation);

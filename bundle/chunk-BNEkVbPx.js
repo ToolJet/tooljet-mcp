@@ -1,16 +1,16 @@
 import { createRequire } from "node:module";
-import { c as codeCliProblem } from "./chunk-QlLV3kax.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-CB78rxY_.js";
-import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BhoYgPP_.js";
-import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, y as resolveComponentLibrary, o as isMisplacedStyleKey, z as defaultPack, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION } from "./chunk-DfrPsyM8.js";
-import { O as downgradeFlexForLibrary, P as toLibraryComponent, Q as missingLibraryPins, R as libraryTypeOf, S as libraryPins } from "./chunk-D1B51Cza.js";
-import { aA as external_exports, ax as activePackSet, aE as fail, aF as ok, aG as exposeActions } from "./chunk-B6ozJ2M5.js";
-import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-O6Dwgt9j.js";
+import { c as codeCliProblem } from "./chunk-BknblBCR.js";
+import { aX as downgradeFlexForLibrary, aR as resolvePackSlot, aD as tableQuotaError, aY as TableQuotaError, aZ as packDefaultDefinition, a_ as toLibraryComponent, a$ as missingLibraryPins, b0 as libraryTypeOf } from "./chunk-BTCQQriH.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-TCn_TQnj.js";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-B0Cy3DPo.js";
+import { J as resolveComponentLibrary, I as componentLibraryChoices, K as savedComponentLibrary, L as checkedLibrarySelection, w as defaultPack, M as COMPONENT_PACK_DESCRIPTION } from "./chunk-CDn2XiRi.js";
+import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-DpFb8fvk.js";
+import { ax as external_exports, ay as fail, az as ok, aA as exposeActions } from "./chunk-CUSUSGze.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 createRequire(import.meta.url);
@@ -668,9 +668,9 @@ var gatewayOriginCache = /* @__PURE__ */ new Map();
 var GATEWAY_CACHE_TTL_MS = 6e4;
 async function checkOriginWithGateway(customerId, origin) {
   const cacheKey = `${customerId} ${origin}`;
-  const cached2 = gatewayOriginCache.get(cacheKey);
-  if (cached2 && cached2.expiresAt > Date.now())
-    return cached2.allowed;
+  const cached = gatewayOriginCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now())
+    return cached.allowed;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   if (!gatewayUrl || !gatewayToken)
@@ -695,9 +695,9 @@ async function checkOriginWithGateway(customerId, origin) {
 }
 var gatewayResolveCache = /* @__PURE__ */ new Map();
 async function resolveApiUrlFromGateway(customerId) {
-  const cached2 = gatewayResolveCache.get(customerId);
-  if (cached2 && cached2.expiresAt > Date.now())
-    return cached2.result;
+  const cached = gatewayResolveCache.get(customerId);
+  if (cached && cached.expiresAt > Date.now())
+    return cached.result;
   const gatewayUrl = env(GATEWAY_URL_VAR);
   const gatewayToken = env(GATEWAY_TOKEN_VAR);
   let result = { url: void 0, verified: false };
@@ -1168,69 +1168,6 @@ function createWorkflowClient(auth, config, queries) {
       return { execution_id: id2, status, nodes, page: page2, per_page: perPage };
     }
   };
-}
-var cached;
-var SAMPLE_BLANKS = {
-  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
-  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
-  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
-  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
-  ShadProgressList: {
-    labelField: "label",
-    valueField: "value",
-    targetField: "target",
-    captionField: "",
-    statusField: "",
-    valueFormat: "auto"
-  },
-  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
-  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
-  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
-  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
-  ShadSummaryStrip: { valueFormat: "auto" },
-  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
-  ShadAvatar: { names: "" },
-  ShadLink: { linkTarget: "" },
-  ShadCombobox: { searchPlaceholder: "Search..." },
-  ShadMultiselect: { searchPlaceholder: "Search..." },
-  ShadTagsInput: { suggestions: "{{[]}}" },
-  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
-  ShadChat: { initialChat: "{{[]}}" },
-  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
-  ShadQuestionnaire: { completeText: "" }
-};
-var PACK_SAMPLE_TEXT = ["label", "title", "resourceTitle", "subTitle", "message"];
-function registerPackDefinitions(extra) {
-  packDefaultDefinition("");
-  const defs = extra;
-  for (const def of Object.values(defs)) {
-    for (const key of PACK_SAMPLE_TEXT) {
-      const entry = def?.properties?.[key];
-      if (entry && typeof entry.value === "string" && entry.value && !entry.value.trim().startsWith("{{"))
-        def.properties[key] = { ...entry, value: "" };
-    }
-  }
-  Object.assign(activePackSet().definitions, defs);
-}
-function packDefaultDefinition(type) {
-  if (!cached) {
-    try {
-      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/pack-default-definitions.json");
-      cached = JSON.parse(readFileSync(path, "utf8")).definitions ?? {};
-      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
-        const def = cached[type2];
-        if (!def?.properties)
-          continue;
-        for (const [key, value] of Object.entries(blanks)) {
-          if (key in def.properties)
-            def.properties[key] = { ...def.properties[key], value };
-        }
-      }
-    } catch {
-      cached = {};
-    }
-  }
-  return activePackSet().definitions[type] ?? cached[type];
 }
 var TOOLJET_DB_RESERVED_COLUMN_NAMES = /* @__PURE__ */ new Set([
   "abort",
@@ -2132,6 +2069,7 @@ function createClient(auth, config) {
       name: full.name,
       version_id: full.editing_version?.id,
       component_library: componentLibrary,
+      component_libraries: componentLibraryChoices(),
       ...full.should_freeze_editor === true ? { editor_frozen: true } : {},
       ...typeof full.editorEnvironment?.name === "string" ? { environment: full.editorEnvironment.name } : {},
       pages,
@@ -3871,7 +3809,7 @@ function projectAppSettings(snapshot) {
     },
     theme: compactTheme(theme),
     // The saved component library (ToolJet UI 1.0 or 2.0); absent on apps from before the setting.
-    component_library: global.componentLibrary,
+    component_library: global.componentLibrary ?? global.component_library,
     header: {
       hidden: properties.hideHeader,
       logo_hidden: properties.hideLogo,
@@ -4099,6 +4037,7 @@ function createAppTool(client) {
       theme: external_exports.union([external_exports.string().min(1), derivedThemeSchema]).optional(),
       app_mode: external_exports.enum(["light", "dark"]).optional().describe("Open the app in this mode. Pass 'dark' when the request asks for a dark app, so the theme's dark values paint every surface; never paint dark backgrounds by hand on a light-mode app."),
       component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      library_selection: external_exports.string().optional().describe("Exact picker value published in the workspace catalog; use for a named pack or custom library."),
       component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
       build_mode: external_exports.enum(["visual", "code"]).optional().describe('How the app is built, fixed at creation. Default "visual" (ToolJet components on the canvas). "code" makes a Code mode app: React code written with the code_app_* tools. Ask the user which they want when the request does not say.')
     },
@@ -4109,7 +4048,7 @@ function createAppTool(client) {
           if (cliProblem)
             return fail(new Error(cliProblem));
           const created2 = await client.createApp(args.name, { buildMode: "code" });
-          const ignored = ["theme", "app_mode", "component_library", "component_pack"].filter((k) => args[k] !== void 0);
+          const ignored = ["theme", "app_mode", "component_library", "component_pack", "library_selection"].filter((k) => args[k] !== void 0);
           return ok({
             ...created2,
             ...ignored.length ? { note: `Not applied to a Code mode app: ${ignored.join(", ")}. Its look is set in its code (frontend/styles/theme.css).` } : {},
@@ -4118,24 +4057,23 @@ function createAppTool(client) {
         }
         if (typeof args.theme === "object")
           derivedThemeSchema.parse(args.theme);
+        const savedLibrary = args.library_selection === void 0 ? savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) : checkedLibrarySelection(args.library_selection, args.component_library, args.component_pack);
         const created = await client.createApp(args.name);
         const componentLibrary = args.component_library ?? "ui2";
         const choice = args.theme ?? "standard";
-        const pins = libraryPins();
-        const pinned = pins ? { customComponentLibraries: pins } : {};
         const result = {
           ...created,
           component_library: componentLibrary,
-          ...componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
+          ...args.library_selection ? { library_selection: args.library_selection } : {},
+          ...!args.library_selection && componentLibrary === "ui2" && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack()).toLowerCase() } : {},
           theme: { mode: "workspace_default" }
         };
-        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
-          globalSettings: { componentLibrary: savedLibrary, ...pinned }
+          globalSettings: { componentLibrary: savedLibrary }
         })).catch((libraryErr) => {
-          result.component_library_warning = `Could not save component_library "${componentLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+          result.component_library_warning = `Could not save component_library "${savedLibrary}": ${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. ` + (args.library_selection ? "Retry update_app_settings on this version before placing components." : "Build in it anyway.");
         });
         if (choice === "workspace_default") {
           await saveLibrary();
@@ -4148,7 +4086,7 @@ function createAppTool(client) {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...appMode ? { appMode } : {} }
+            globalSettings: { theme, componentLibrary: savedLibrary, ...appMode ? { appMode } : {} }
           });
           const mode = choice === "standard" ? "standard" : typeof choice === "object" ? "derived" : "named";
           const accentNote = mode === "standard" ? accentWarning(STANDARD_PRIMARY) : mode === "derived" ? accentWarning(choice.definition) : null;
@@ -4405,9 +4343,7 @@ function themeActionTools(source) {
 }
 export {
   ALLOWED_API_ORIGINS_VAR as A,
-  identityFromHeaders as B,
-  BASE_URL_HEADER as C,
-  PAT_HEADER as D,
+  BASE_URL_HEADER as B,
   PartialWriteError as P,
   SESSION_TOKEN_HEADER as S,
   TOOLJET_DB_DATA_TYPES as T,
@@ -4421,21 +4357,21 @@ export {
   createClient as g,
   createAppTool as h,
   indexComponentReferences as i,
-  projectJavascriptRuntime as j,
-  projectAppSettings as k,
+  projectAppSettings as j,
+  compactTheme as k,
   literalCanvasColor as l,
   manageThemeTool as m,
   normalizeType as n,
-  compactTheme as o,
-  packDefaultDefinition as p,
-  pageSettingProperties as q,
-  registerPackDefinitions as r,
-  ToolJetHttpError as s,
+  pageSettingProperties as o,
+  projectJavascriptRuntime as p,
+  ToolJetHttpError as q,
+  workflowOperations as r,
+  branchIdFor as s,
   themeActionTools as t,
-  workflowOperations as u,
+  withBranchContext as u,
   validateTableBatch as v,
   workspaceAccessKeys as w,
-  branchIdFor as x,
-  withBranchContext as y,
-  allowedApiOrigins as z
+  allowedApiOrigins as x,
+  identityFromHeaders as y,
+  PAT_HEADER as z
 };

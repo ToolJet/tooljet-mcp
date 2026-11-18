@@ -1,10 +1,6 @@
 import { createRequire } from "node:module";
-import { ax as activePackSet, ay as getComponentSchema } from "./chunk-B6ozJ2M5.js";
-import { p as parseExpression, a as parse } from "./chunk-Be6oakQ4.js";
-import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { e6 as __commonJS, e7 as __require } from "./chunk-BhoYgPP_.js";
+import { aE as getComponentSchema, aF as isLibraryPackType, aG as serverLibraryPacks, aH as libraryPacksAll, aI as __commonJS, aJ as __require } from "./chunk-BTCQQriH.js";
+import { p as parseExpression, a as parse } from "./chunk-DyR1HbdA.js";
 createRequire(import.meta.url);
 var UI2_COMMON_RENAMES = {
   actions: { visibility: "setVisibility", disable: "setDisable", loading: "setLoading" }
@@ -95,167 +91,6 @@ function retiredUi2Name(type, kind, name) {
     return own[name];
   const common = UI2_COMMON_RENAMES[kind];
   return common && Object.prototype.hasOwnProperty.call(common, name) ? common[name] : void 0;
-}
-var offline;
-function libraryPacksAll() {
-  const discovered = activePackSet().packs;
-  if (discovered)
-    return discovered;
-  if (offline === void 0) {
-    try {
-      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/library-pack.json");
-      offline = JSON.parse(readFileSync(path, "utf8"));
-    } catch {
-      offline = null;
-    }
-  }
-  return offline ? [offline] : [];
-}
-function registerLibraryPacks(packs) {
-  const set = activePackSet();
-  set.packs = packs;
-}
-var serverLibraryPacks = () => activePackSet().packs ?? [];
-function libraryPack() {
-  return libraryPacksAll()[0] ?? null;
-}
-var isBuiltin = (pack) => pack.kind === "builtin";
-var packOfType = (type) => typeof type === "string" ? libraryPacksAll().find((p) => type.startsWith(p.prefix)) : void 0;
-var isLibraryPackType = (type) => !!packOfType(type);
-var packComponentOf = (type) => Object.values(packOfType(type)?.components ?? {}).find((entry) => entry.type === type);
-var slotNamesOf = (component, kind) => (component?.slots ?? []).filter((slot) => kind === void 0 || slot.kind === kind).map((slot) => String(slot.name ?? "")).filter(Boolean);
-function packSlotNames(type) {
-  const component = packComponentOf(type);
-  return component && component.slotsKnown !== false ? slotNamesOf(component) : void 0;
-}
-function packRowSlotNames(type) {
-  return slotNamesOf(packComponentOf(type), "rows");
-}
-function packSlotOnOwnId(type, slotName) {
-  const component = packComponentOf(type);
-  const rows = slotNamesOf(component, "rows");
-  if (!rows.length)
-    return false;
-  if (slotName)
-    return rows.includes(slotName);
-  return slotNamesOf(component).every((name) => rows.includes(name));
-}
-function libraryPins() {
-  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
-  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ""), p.version])) : void 0;
-}
-var dashless = (id) => id.replace(/-/g, "");
-var propertyValue = (properties, key3) => {
-  const entry = properties?.[key3];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-};
-function libraryCorrelationId(component) {
-  const properties = component.properties;
-  const id = propertyValue(properties, "correlationId");
-  return typeof id === "string" && id && !propertyValue(properties, "codePage") ? id : void 0;
-}
-var isPinned = (pins, correlationId) => pins[dashless(correlationId)] != null || pins[correlationId] != null;
-function missingLibraryPins(components, pins) {
-  const missing = {};
-  for (const component of components) {
-    const id = libraryCorrelationId(component);
-    if (!id || isPinned(pins, id))
-      continue;
-    const pack = libraryPacksAll().find((p) => !isBuiltin(p) && p.correlationId === id);
-    if (pack)
-      missing[dashless(id)] = pack.version;
-  }
-  return Object.keys(missing).length ? missing : void 0;
-}
-function unpinnedLibraries(components, pins) {
-  const byLibrary = /* @__PURE__ */ new Map();
-  for (const component of components) {
-    const id = libraryCorrelationId(component);
-    if (!id || isPinned(pins, id))
-      continue;
-    const library = String(propertyValue(component.properties, "libraryName") ?? id);
-    byLibrary.set(library, [...byLibrary.get(library) ?? [], String(component.name ?? "unnamed")]);
-  }
-  return [...byLibrary].map(([library, names]) => ({ library, components: names }));
-}
-function toLibraryComponent(spec) {
-  const pack = packOfType(spec.type);
-  if (!pack)
-    return spec;
-  const componentName = spec.type.slice(pack.prefix.length);
-  if (isBuiltin(pack)) {
-    return {
-      ...spec,
-      type: "PackComponent",
-      properties: {
-        ...spec.properties ?? {},
-        pack: { value: pack.pack },
-        componentName: { value: componentName }
-      }
-    };
-  }
-  return {
-    ...spec,
-    type: "LibraryComponent",
-    properties: {
-      ...spec.properties ?? {},
-      libraryId: { value: pack.libraryId },
-      correlationId: { value: pack.correlationId },
-      libraryName: { value: pack.libraryName },
-      componentName: { value: componentName }
-    }
-  };
-}
-function isEmptyLibraryHost(component) {
-  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
-    return false;
-  return !["componentName", "pack", "libraryId", "correlationId", "libraryName"].some((key3) => {
-    const entry = component.properties?.[key3];
-    const value = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-    return typeof value === "string" && value.trim() !== "";
-  });
-}
-function emptyLibraryHostError(component, options = {}) {
-  if (!isEmptyLibraryHost(component))
-    return null;
-  return `Component "${component.name ?? component.id ?? component.type}" is a ${component.type} that names no component, so it draws an empty box: it is ToolJet's internal host, stored with the component it draws. ${options.persisted ? "Delete it and add" : "Write"} the pack's own type, Lib_<pack>_<Component> (get_component_catalog lists them).`;
-}
-function libraryTypeOf(component) {
-  if (component.type !== "LibraryComponent" && component.type !== "PackComponent")
-    return void 0;
-  const value = (key3) => {
-    const entry = component.properties?.[key3];
-    return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  };
-  if (component.type === "PackComponent") {
-    const id = value("pack");
-    const name2 = value("componentName");
-    if (typeof id !== "string" || typeof name2 !== "string")
-      return void 0;
-    const known = libraryPacksAll().find((p) => p.pack === id);
-    if (!known)
-      return `Lib_${id.toLowerCase().replace(/[^a-z0-9]+/g, "")}_${name2}`;
-    return known.components[name2] ? `${known.prefix}${name2}` : void 0;
-  }
-  const pack = libraryPacksAll().find((p) => p.correlationId === value("correlationId"));
-  const name = value("componentName");
-  return pack && typeof name === "string" && pack.components[name] ? `${pack.prefix}${name}` : void 0;
-}
-var FLEX_DOWNGRADE = {
-  alignItems: { stretch: "flex-start", "last baseline": "flex-start" },
-  justifyContent: { "space-between": "flex-start" }
-};
-function downgradeFlexForLibrary(spec) {
-  if (process.env.TOOLJET_FLEX_V1 !== "1" || !libraryPack() || spec.type !== "FlexContainer" || !spec.properties)
-    return spec;
-  const properties = { ...spec.properties };
-  for (const [key3, map] of Object.entries(FLEX_DOWNGRADE)) {
-    const entry = properties[key3];
-    const value = entry && typeof entry === "object" ? entry.value : entry;
-    if (typeof value === "string" && map[value])
-      properties[key3] = { value: map[value] };
-  }
-  return { ...spec, properties };
 }
 var isNode = (value) => !!value && typeof value === "object" && typeof value.type === "string";
 var isMember = (value) => isNode(value) && ["MemberExpression", "OptionalMemberExpression"].includes(value.type);
@@ -1040,7 +875,7 @@ function eventPayload(event) {
 function queryTriggers(summary) {
   const byId = new Map(summary.queries.map((q) => [q.id, q]));
   const byName = new Map(summary.queries.flatMap((q) => q.name ? [[q.name, q]] : []));
-  const resolve2 = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
+  const resolve = (ref) => typeof ref === "string" ? byId.get(ref) ?? byName.get(ref) : void 0;
   const triggers = /* @__PURE__ */ new Map();
   for (const q of summary.queries) {
     const options = q.options && typeof q.options === "object" ? q.options : {};
@@ -1052,7 +887,7 @@ function queryTriggers(summary) {
     const payload = eventPayload(e.event);
     if (!payload || payload.actionId !== "run-query")
       continue;
-    const target = resolve2(payload.queryId ?? payload.queryName);
+    const target = resolve(payload.queryId ?? payload.queryName);
     if (!target)
       continue;
     const entry = triggers.get(target.id);
@@ -1754,6 +1589,120 @@ function lintSelectedRowProjections(components, extraSources = []) {
     }
   }
   return [...warnings];
+}
+createRequire(import.meta.url);
+function componentLibraryChoices() {
+  return serverLibraryPacks().map((p) => ({
+    value: p.kind === "builtin" ? `pack:${p.pack}` : `lib:${p.libraryId}`,
+    name: p.kind === "builtin" && p.pack === "shadcn" ? "Rocket 2.0" : p.libraryName,
+    ...p.kind === "builtin" && p.pack === "shadcn" && p.libraryName !== "Rocket 2.0" && { aliases: [p.libraryName] },
+    pack: p.prefix.slice(4, -1)
+  }));
+}
+function checkedLibrarySelection(value, library, pack) {
+  if (library !== void 0 || pack !== void 0)
+    throw new Error("Provide only one library selection.");
+  if (!componentLibraryChoices().some((choice) => choice.value === value)) {
+    throw new Error(`Component library "${value}" is unavailable in this workspace. Read get_app_summary for the available choices.`);
+  }
+  return value;
+}
+var defaultPack = () => {
+  const raw = process.env.MCP_AGENT_PACK;
+  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
+};
+var savedComponentLibrary = (library, pack) => {
+  const chosen = pack?.trim().toLowerCase() || defaultPack();
+  return library === "ui2" && chosen ? `pack:${chosen}` : library;
+};
+var COMPONENT_PACK_DESCRIPTION = "A shipped component pack ID for UI 2.0. For named libraries use library_selection with a value from the workspace catalog.";
+var COMPONENT_LIBRARY_NAMES = {
+  ui1: "ToolJet UI 1.0",
+  ui2: "ToolJet UI 2.0"
+};
+var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
+var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
+function resolveComponentLibrary(globalSettings, componentTypes) {
+  const settings = globalSettings;
+  const saved = settings?.componentLibrary ?? settings?.component_library;
+  if (saved === "ui1" || saved === "ui2")
+    return { library: saved, source: "saved" };
+  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5) {
+    const id = saved.slice(5);
+    const catalogId = componentLibraryChoices().find((choice) => choice.value === saved)?.pack ?? id;
+    return { library: "ui2", source: "saved", pack: catalogId, ...id !== catalogId && { selection: saved } };
+  }
+  if (typeof saved === "string" && saved.startsWith("lib:")) {
+    const choice = componentLibraryChoices().find((item) => item.value === saved);
+    return { library: "ui2", source: "saved", selection: saved, ...choice && { pack: choice.pack } };
+  }
+  for (const type of componentTypes)
+    if (isUi2Type(type) || isPackType(type))
+      return { library: "ui2", source: "inferred" };
+  return { library: "ui1", source: "inferred" };
+}
+var styleValue = (styles, key3) => {
+  const entry = styles?.[key3];
+  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+};
+function nativeFitsUi2(component) {
+  if (component.type === "FlexContainer" || component.type === "Map")
+    return true;
+  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
+}
+function buildPack(library) {
+  if (library.pack)
+    return library.pack;
+  return serverLibraryPacks().length ? defaultPack() : void 0;
+}
+function packFix(pack) {
+  const components = libraryPacksAll().find((p) => p.prefix === `Lib_${pack}_`)?.components ?? {};
+  const first = (...names) => names.find((name) => components[name]);
+  const dialog = first("Dialog", "Modal");
+  const sheet = first("Drawer", "Sheet");
+  return `Build with the app's component pack instead: types whose names start with Lib_${pack}_ (get_component_catalog lists them), laid out in FlexContainers; ` + (dialog ? `Lib_${pack}_${dialog} for dialogs; ` : "") + (sheet ? `Lib_${pack}_${sheet} for side sheets; ` : "") + `for tables ToolJet's Table (styles.tableLook "shadcn").`;
+}
+function componentLibraryWarnings(library, pages, request) {
+  if (request?.trim())
+    return [];
+  const selectedPack = "pack" in library ? library.pack : void 0;
+  const off = /* @__PURE__ */ new Map();
+  for (const page of pages ?? []) {
+    for (const component of page.components ?? []) {
+      const type = String(component.type ?? "");
+      const ui2Side = isUi2Type(type) || isPackType(type);
+      const mismatch = library.library === "ui1" ? ui2Side : selectedPack ? !type.startsWith(`Lib_${selectedPack}_`) && !nativeFitsUi2(component) && type !== "ModalV2" : !ui2Side && !nativeFitsUi2(component);
+      if (!mismatch)
+        continue;
+      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
+    }
+  }
+  if (!off.size)
+    return [];
+  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
+  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
+  const appName = COMPONENT_LIBRARY_NAMES[library.library];
+  const pack = library.library === "ui2" ? buildPack(library) : void 0;
+  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : pack ? packFix(pack) : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
+  return [
+    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
+  ];
+}
+function verifyLibrarySelection(library, pages, expected, existingIds) {
+  const choice = componentLibraryChoices().find((item) => item.value === expected);
+  const saved = library?.selection ?? (library?.pack ? `pack:${library.pack}` : void 0);
+  if (!choice || saved !== expected)
+    return ["The app version does not have the requested component library selected and available."];
+  const existing = new Set(existingIds);
+  const added = pages.flatMap((page) => page.components).filter((component) => !existing.has(component.id));
+  const prefix = `Lib_${choice.pack}_`;
+  const mismatches = added.filter((c) => !c.type?.startsWith(prefix) && !nativeFitsUi2(c) && c.type !== "ModalV2");
+  if (mismatches.length)
+    return [`Use ${choice.name} components for: ${mismatches.map((c) => c.name ?? c.id).join(", ")} (expected ${prefix}*).`];
+  if (!existing.size && added.length && !added.some((c) => c.type?.startsWith(prefix))) {
+    return [`The new UI contains no components from ${choice.name}.`];
+  }
+  return [];
 }
 createRequire(import.meta.url);
 var require_identity = __commonJS({
@@ -4717,27 +4666,21 @@ var require_parser = __commonJS({
   }
 });
 export {
-  retiredUi2Name as A,
-  lintTextFormat as B,
-  lintTableColumnsShape as C,
-  BARE_QUERY_DATA_BINDING as D,
-  lintComponentStateBindings as E,
-  lintEmptyDateWrites as F,
-  lintUntriggeredDataQueries as G,
-  lintAutomaticWrites as H,
-  packRowSlotNames as I,
-  libraryPacksAll as J,
-  parseHtml as K,
-  stripHtmlBindings as L,
-  packSlotNames as M,
-  suggestedHtmlHeight as N,
-  downgradeFlexForLibrary as O,
-  toLibraryComponent as P,
-  missingLibraryPins as Q,
-  libraryTypeOf as R,
-  libraryPins as S,
-  unpinnedLibraries as T,
-  registerLibraryPacks as U,
+  lintComponentStateBindings as A,
+  BARE_QUERY_DATA_BINDING as B,
+  lintEmptyDateWrites as C,
+  lintUntriggeredDataQueries as D,
+  lintAutomaticWrites as E,
+  parseHtml as F,
+  stripHtmlBindings as G,
+  suggestedHtmlHeight as H,
+  componentLibraryChoices as I,
+  resolveComponentLibrary as J,
+  savedComponentLibrary as K,
+  checkedLibrarySelection as L,
+  COMPONENT_PACK_DESCRIPTION as M,
+  componentLibraryWarnings as N,
+  verifyLibrarySelection as O,
   require_identity as a,
   require_Scalar as b,
   require_cst as c,
@@ -4751,17 +4694,17 @@ export {
   require_resolve_block_scalar as k,
   require_resolve_flow_scalar as l,
   lintSelectedRowProjections as m,
-  emptyLibraryHostError as n,
-  lintOversizedWidths as o,
-  packSlotOnOwnId as p,
-  lintHtmlContentHeight as q,
+  lintOversizedWidths as n,
+  lintHtmlContentHeight as o,
+  lintHtmlRootSurface as p,
+  lintUnguardedComponentRefs as q,
   require_errors as r,
   surfaceAroundResolver as s,
-  lintHtmlRootSurface as t,
-  lintUnguardedComponentRefs as u,
-  lintEmbeddedBindingSyntax as v,
-  lintChartDataShape as w,
-  lintUnguardedSelectionText as x,
-  isLibraryPackType as y,
-  serverLibraryPacks as z
+  lintEmbeddedBindingSyntax as t,
+  lintChartDataShape as u,
+  lintUnguardedSelectionText as v,
+  defaultPack as w,
+  retiredUi2Name as x,
+  lintTextFormat as y,
+  lintTableColumnsShape as z
 };

@@ -101,13 +101,6 @@ export function packSlotOnOwnId(type: unknown, slotName?: string): boolean {
   return slotNamesOf(component).every((name) => rows.includes(name));
 }
 
-/** The globalSettings entry that pins every known pack for an app version. */
-export function libraryPins(): Record<string, string> | undefined {
-  // A shipped pack (PackComponent) needs no pin: it always draws the build the release ships.
-  const packs = libraryPacksAll().filter((p) => !isBuiltin(p));
-  return packs.length ? Object.fromEntries(packs.map((p) => [p.correlationId.replace(/-/g, ''), p.version])) : undefined;
-}
-
 type Section = Record<string, unknown>;
 
 const dashless = (id: string): string => id.replace(/-/g, '');

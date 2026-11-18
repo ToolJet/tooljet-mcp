@@ -25,7 +25,7 @@ describe('resolveComponentLibrary', () => {
 
   it('reads a component pack picked in the components panel, and builds another custom library in UI 1.0', () => {
     expect(resolveComponentLibrary({ componentLibrary: 'pack:antd' }, [])).toEqual({ library: 'ui2', source: 'saved', pack: 'antd' });
-    expect(resolveComponentLibrary({ componentLibrary: 'lib:1234' }, ['ShadButton'])).toEqual({ library: 'ui1', source: 'saved' });
+    expect(resolveComponentLibrary({ componentLibrary: 'lib:1234' }, ['ShadButton'])).toEqual({ library: 'ui2', source: 'saved', selection: 'lib:1234' });
   });
 
   // SkyLine in Ant Design (2026-11-01): create_app could only save the default pack, so the app had to be moved to
