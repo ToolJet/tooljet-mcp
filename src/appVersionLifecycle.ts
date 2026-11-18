@@ -6,6 +6,9 @@ interface Version {
   description?: string | null;
   status?: string;
   environmentId?: string;
+  versionType?: string;
+  branchId?: string;
+  displayName?: string;
 }
 interface Environment { id: string; name: string; priority: number; enabled: boolean }
 
@@ -23,9 +26,15 @@ export function createAppVersionLifecycle(auth: Auth, getApp: (id: string) => Pr
   function normalize(raw: Record<string, unknown>): Version {
     if (typeof raw.id !== 'string' || typeof raw.name !== 'string') throw new Error('Invalid version metadata.');
     const environmentId = raw.current_environment_id ?? raw.currentEnvironmentId;
+    const versionType = raw.version_type ?? raw.versionType;
+    const branchId = raw.branch_id ?? raw.branchId;
+    const displayName = raw.display_name ?? raw.displayName;
     return { id: raw.id, name: raw.name,
       ...(typeof raw.description === 'string' || raw.description === null ? { description: raw.description } : {}),
       ...(typeof raw.status === 'string' ? { status: raw.status } : {}),
+      ...(typeof versionType === 'string' ? { versionType } : {}),
+      ...(typeof branchId === 'string' ? { branchId } : {}),
+      ...(typeof displayName === 'string' ? { displayName } : {}),
       ...(typeof environmentId === 'string' ? { environmentId } : {}) };
   }
   async function versions(appId: string): Promise<Version[]> {
@@ -56,6 +65,9 @@ export function createAppVersionLifecycle(auth: Auth, getApp: (id: string) => Pr
   }
   function selection(appId: string, v: Version, environmentId = v.environmentId) {
     return { app_id: appId, version_id: v.id, version_name: v.name, selected: true as const,
+      ...(v.versionType ? { version_type: v.versionType } : {}),
+      ...(v.branchId ? { branch_id: v.branchId } : {}),
+      ...(v.displayName ? { display_name: v.displayName } : {}),
       ...(v.status ? { status: v.status } : {}),
       ...(environmentId ? { current_environment_id: environmentId } : {}) };
   }
@@ -79,6 +91,10 @@ export function createAppVersionLifecycle(auth: Auth, getApp: (id: string) => Pr
   }
   async function promote(appId: string, versionId: string, environmentName: string) {
     let v = await version(appId, versionId);
+    // Publishing a branch head clones a new named version; it does not publish this id.
+    if (v.versionType?.toLowerCase() === 'branch') {
+      throw new Error('Cannot promote a branch head. Save a named version in ToolJet, then select that exact version for promotion.');
+    }
     const envs = await environments(appId);
     const target = environment(envs, environmentName);
     const start = envs.find(e => e.id === v.environmentId);

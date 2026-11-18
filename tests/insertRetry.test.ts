@@ -13,7 +13,13 @@ function setup(insert: (row: Record<string, unknown>) => Promise<Response>) {
       { column_name: 'name', data_type: 'character varying' },
     ] } }))
     .mockResolvedValueOnce(response(200, { result: [{ id: 'people-id', table_name: 'people' }] }))
-    .mockImplementation((_path, init) => insert(JSON.parse(init.body)));
+    // A server without ToolJet's proxy fix: it rejects a list of rows, and the client goes row by row.
+    .mockImplementation((_path, init) => {
+      const body = JSON.parse(init.body);
+      return Array.isArray(body)
+        ? Promise.resolve(response(400, { code: 'PGRST204', message: "Could not find the '0' column of 'people' in the schema cache" }))
+        : insert(body);
+    });
   const auth = {
     authedFetch,
     getOrganizationId: vi.fn().mockResolvedValue('org'),

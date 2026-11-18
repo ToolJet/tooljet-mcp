@@ -46,9 +46,12 @@ surface.colors
 Theme colors are normally hex values. The saved definition generates ToolJet's semantic `--cc-*` variables at
 runtime; do not put CSS variable references inside the theme definition itself.
 
-**A dark design lives in the light slot too.** Apps open in light mode unless the viewer switches, so a brief that
-asks for a dark app (a charcoal or near-black canvas, light text) needs its dark palette in the `light` values as well
-as the `dark` ones: appBackground, the surfaces, text and borders. A theme with a light canvas in its light slot and
+**A dark app opens in dark mode.** Apps open in light mode unless told otherwise, so when a brief asks for a dark app
+(a charcoal or near-black canvas, light text), pass `app_mode: "dark"` with the theme (`manage_theme` create or
+`create_app`): the theme's `dark` values then paint the canvas, surfaces, text and borders, and ToolJet's own parts
+(tables, inputs, chips) draw for a dark surface. Never paint dark backgrounds by hand on a light-mode app: a
+"dark, focused" dashboard (2026-10-10) did, and its tables drew white headers and dark text on the dark cards. A theme
+with its dark palette in the `light` values as well also opens in dark mode. A theme with a light canvas in its light slot and
 components hard-coded for dark renders dark panels on a pale page, with pale headings on the canvas and dark labels
 inside the panels (a gym front-desk build, 2026-09-29).
 

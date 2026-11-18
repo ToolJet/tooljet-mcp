@@ -54,7 +54,10 @@ const MUST_BE_DESTRUCTIVE = [
   'drop_table', 'drop_table_column', 'manage_theme', 'manage_workspace_groups',
   'run_queries', 'run_query',
   'apply_workflow_spec', 'run_workflow',
-  'delete_workflow_node',
+  'delete_workflow_node', 'stop_workflow_execution', 'resolve_workflow_approval', 'cancel_workflow_approval',
+  'create_workflow_schedule', 'update_workflow_schedule', 'set_workflow_schedule_active', 'delete_workflow_schedule',
+  'set_workflow_webhook_enabled', 'preview_workflow_node', 'set_workflow_packages', 'rebuild_workflow_bundle',
+  'set_workflow_setup_script', 'set_workflow_webhook_parameters', 'upsert_workflow_agent_tool',
   'update_app_settings', 'update_components', 'update_events',
   'update_layout', 'update_pages', 'update_query', 'update_app_version',
   'invite_workspace_user', 'update_workspace_user', 'archive_workspace_user', 'unarchive_workspace_user',
@@ -64,25 +67,26 @@ const MUST_BE_DESTRUCTIVE = [
 ];
 
 const MUST_BE_READ_ONLY = [
+  'code_app_read_files', 'list_app_permission_screens', 'list_app_permission_queries',
   'generate_form_schema', 'get_app', 'get_app_settings', 'get_app_summary', 'get_component',
   'get_component_catalog', 'get_datasource_query_schema', 'get_runtime_info', 'get_table_schema',
   'inspect_datasource_schema', 'lint_app_spec', 'list_app_themes', 'list_datasources',
-  'list_events', 'list_tables', 'list_workspaces', 'list_workspace_groups', 'prepare_sql_discovery_queries',
+  'list_events', 'list_tables', 'list_workspaces', 'list_workspace_branches', 'list_workspace_groups', 'prepare_sql_discovery_queries',
   'test_datasource_connection', 'use_workspace', 'validate_app', 'verify_page_render',
   'get_workflow', 'get_workflow_execution', 'get_workflow_node_catalog',
   'get_workflow_capabilities', 'list_workflows', 'lint_workflow_spec', 'validate_workflow',
 ];
 
-const MUST_BE_ADDITIVE = ['create_workflow'];
+const MUST_BE_ADDITIVE = ['create_workflow', 'code_app_scaffold', 'code_app_write_files', 'code_app_build', 'code_app_install', 'code_app_add_dependency'];
 
 describe('tool annotations', () => {
   const tools = registeredTools();
 
   it.each([
-    { legacy: false, render: false, count: 116 },
-    { legacy: true, render: false, count: 121 },
-    { legacy: false, render: true, count: 117 },
-    { legacy: true, render: true, count: 122 },
+    { legacy: false, render: false, count: 158 },
+    { legacy: true, render: false, count: 163 },
+    { legacy: false, render: true, count: 159 },
+    { legacy: true, render: true, count: 164 },
   ])('publishes complete wire annotations with legacy=$legacy and render=$render', async ({ legacy, render, count }) => {
     const previous = process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS;
     process.env.TOOLJET_INCLUDE_LEGACY_SINGULAR_TOOLS = String(legacy);
@@ -146,11 +150,15 @@ describe('tool annotations', () => {
 
   it('reserves open-world annotations for execution, connected-service probes, rendering, and invitations', () => {
     expect(tools.filter(t => t.annotations?.openWorldHint).map(t => t.name).sort()).toEqual([
+      'code_app_scaffold', 'code_app_read_files', 'code_app_build', 'code_app_install', 'code_app_add_dependency', 'code_app_data',
       'inspect_datasource_schema', 'invite_workspace_user', 'manage_workspace_users',
       'run_queries', 'run_query', 'run_workflow', 'test_datasource_connection', 'verify_page_render',
       'list_datasource_datasets', 'list_datasource_tables', 'list_datasource_columns', 'list_datasource_sheets',
       'list_datasource_spreadsheets', 'get_datasource_endpoint_schema', 'list_datasource_collections',
       'list_datasource_schemas', 'list_datasource_tenants',
+      'create_workflow_schedule', 'update_workflow_schedule', 'set_workflow_schedule_active', 'resolve_workflow_approval',
+      'set_workflow_webhook_enabled', 'preview_workflow_node', 'set_workflow_packages', 'rebuild_workflow_bundle',
+      'search_workflow_packages', 'get_workflow_package',
     ].sort());
   });
 

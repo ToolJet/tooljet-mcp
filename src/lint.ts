@@ -1,3 +1,7 @@
+import { emptyLibraryHostError, isLibraryPackType, packRowSlotNames, packSlotOnOwnId, serverLibraryPacks } from './libraryPack.js';
+import { packCanvases } from './packItemSlots.js';
+import { packValueTypeError } from './packValueTypes.js';
+import { defaultPack } from './componentLibrary.js';
 // Mechanical, catalog-independent checks that catch the render bugs the skill can only *advise*
 // against. Used by add_component(s) (component-level, pre-write) and validate_app (whole-app,
 // post-write). Errors block; warnings are surfaced to the agent but don't block.
@@ -17,26 +21,36 @@ import {
   lintTextFormat,
   lintUntriggeredDataQueries, lintAutomaticWrites,
 } from './renderReadiness.js';
-import { bindingReferences } from './bindingReferences.js';
+import { bindingReferences, dynamicBindingNamespaces, QUERY_PROPERTIES, unknownQueryMemberReads } from './bindingReferences.js';
 import { bindingSpans } from './bindingSpans.js';
 import { componentNameError } from './componentName.js';
 import { lintEditPrefill, lintUninitializedWriteSelections } from './editPrefillContract.js';
 import { lintWhitespaceGuards } from './whitespaceGuard.js';
 import { lintSelectedRowObjectGuards } from './selectedRowGuard.js';
 import { lintSurfaceInsets } from './surfaceInsets.js';
-import { lintComponentStateBindings } from './componentStateBindings.js';
+import { lintComponentStateBindings, lintEmptyDateWrites } from './componentStateBindings.js';
 import { lintBindingNames } from './queryValidation.js';
 import { pageIconError } from './pageIcons.js';
-import { runjsComponentReferences, runjsQueryReferences } from './runjsReferences.js';
+import { runjsComponentReferences, runjsQueryReferences, runjsReturnsNothing } from './runjsReferences.js';
 import { lintBindingSyntax } from './bindingSyntax.js';
 import { lintSelectedRowProjections } from './selectedRowProjection.js';
 import { dropdownDefaultVisibilityWarning, dropdownSelfDefaultWarning } from './dropdownDefaultContract.js';
-import { getCatalog, getComponentSchema, getLegacyComponentReplacement } from './catalog.js';
-import { decodeComponentParent, isComponentSlotName, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { getCatalog, getComponentSchema, getLegacyComponentReplacement, internalComponentTypeNote } from './catalog.js';
+import { decodeComponentParent, isComponentSlotName, isNativeSlotName, isPackContainerType, isTabSlot, type ComponentSlotName } from './componentParent.js';
+import { packSlotsOfType, resolvePackSlot } from './packSlots.js';
 import {
   FORM_SCHEMA_FIELD_TYPE_SET,
   SAFE_GENERATED_FORM_FIELD_TYPE_SET,
 } from './formFieldTypes.js';
+import { isModalV2Type } from './modalTypes.js';
+import { retiredUi2Name } from './ui2LegacyNames.js';
+import { lintUnformattedNumbers } from './numberFormatLint.js';
+import { lintCopiedCards } from './repeatedCardsLint.js';
+import { lintTallContainers } from './containerExtentLint.js';
+import { lintChartAccents } from './chartAccentLint.js';
+import { lintKpiCardGrids } from './kpiGridLint.js';
+import { lintShadMaps } from './shadMapLint.js';
+import { lintTruthySelectionGuards } from './selectionGuardLint.js';
 
 export interface LintResult {
   errors: string[];
@@ -60,6 +74,15 @@ export const STYLE_KEYS_IN_PROPERTIES = new Set([
   'accentColor',
   'iconColor',
 ]);
+
+/** A style key authored under `properties` where ToolJet ignores it. A key the component's own schema declares as a
+ *  property, and not as a style, is where it belongs: FlexContainer `padding` is a property (widgets/flexContainer.js). */
+export function isMisplacedStyleKey(type: string | undefined, key: string): boolean {
+  if (!STYLE_KEYS_IN_PROPERTIES.has(key)) return false;
+  const schema = type ? getComponentSchema(type) : null;
+  if (!schema) return true;
+  return !(schema.properties.some((entry) => entry.key === key) && !schema.styles.some((entry) => entry.key === key));
+}
 
 /** Known wrong property/style keys (CSS or other-builder names, or bad casing) mapped to the correct
  *  ToolJet key. The edit-distance suggester misses these because the names differ too much
@@ -178,7 +201,13 @@ const TABLE_FOOTER_HEIGHT_PX = 46;
 const TABLE_BORDER_PX = 2;
 /** Above this many visible Table columns, a default-width table usually forces horizontal scrolling. */
 const TABLE_VISIBLE_COLUMN_WARN = 10;
-const SLOT_PARENT_TYPES = new Set(['ModalV2', 'Form', 'Container', 'Accordion']);
+const SLOT_PARENT_TYPES = new Set(['ModalV2', 'ShadDialog', 'Form', 'Container', 'Accordion']);
+// Widgets with the Tabs contract (tabItems, per-tab canvases, tab-<id> slots): the native Tabs and the shadcn/ui pack's.
+const TABS_TYPES = new Set(['Tabs', 'ShadTabs']);
+// Row-scoped lists that repeat one canvas per item (listItem): the native Listview and the shadcn/ui pack's.
+const LIST_TYPES = new Set(['Listview', 'ShadListView']);
+// The shadcn/ui Tabs' catalog default titles: left in place they mean the tabs were never authored.
+const SHAD_TABS_DEFAULT_TITLES = ['Overview', 'Activity', 'Settings'];
 /** ToolJet's viewer chrome reduces the usable height of a common ~800px desktop window. Keep a
  * primary action above this authored-canvas boundary when it follows an independently scrolling
  * Table/Listview, otherwise users must operate two nested vertical scroll regions. */
@@ -689,10 +718,19 @@ export function lintUnusableTextGeometry(components: LintComponent[]): string[] 
   return errors;
 }
 
-export function introducedLintFindings(before: string[], after: string[]): string[] {
-  const existing = new Set(before);
-  return after.filter((finding) => !existing.has(finding));
+export function introducedLintFindings(
+  before: string[],
+  after: string[],
+  keyOf: (finding: string) => string = (finding) => finding
+): string[] {
+  const existing = new Set(before.map(keyOf));
+  return after.filter((finding) => !existing.has(keyOf(finding)));
 }
+
+/** A slot finding without the container's canvas list (lintPackItemSlots), which an item change rewords: the same child
+ *  on the same canvas is the same finding, so a child already stranded does not block adding or restoring an item. */
+export const slotFindingKey = (finding: string): string =>
+  finding.replace(/ \(its canvases: [^)]*\)| \(parent \+ slot_name: [^)]*\)|Pass slot_name with the parent: .*$/, '');
 
 export function lintTextGeometry(components: LintComponent[]): string[] {
   const warnings: string[] = [];
@@ -750,14 +788,25 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
   for (const component of components) {
     const persistedSlot = component.parent ? decodeComponentParent(component.parent).slotName : 'body';
     const slotName = component.slotName ?? (persistedSlot === 'body' ? undefined : persistedSlot);
-    if (!slotName) continue;
     const placement = parentPlacement(component);
     const parent = placement ? refs.get(placement.parentId) : undefined;
-    const validParent = slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? parent?.type === 'Tabs' :
-      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && parent?.type === 'Kanban');
+    // A pack widget whose pack this server read takes the slots it draws (packSlots.ts), and a child with none named
+    // only where it has a body or a single slot (QA DVRL-9, DVRL-60).
+    if (parent && isLibraryPackType(parent.type) && packSlotsOfType(parent.type)) {
+      const slot = resolvePackSlot(parent, slotName, String(component.name ?? component.id ?? component.type));
+      if (!slot.ok) errors.push(slot.error);
+      continue;
+    }
+    if (!slotName) continue;
+    // A FlexContainer has one canvas, its body: slot_name "body" there is the plain parent, as for a Container.
+    // A published library's container (libraryPack.ts) takes its own named slots (ToolJet.Slot, e.g. tab_details).
+    const validParent = isLibraryPackType(parent?.type) || isPackContainerType(parent?.type) ? !['header', 'footer', 'modal'].includes(slotName) && !isTabSlot(slotName) :
+      !isNativeSlotName(slotName) ? false :
+      slotName === 'modal' ? parent?.type === 'Kanban' : isTabSlot(slotName) ? TABS_TYPES.has(parent?.type ?? '') :
+      SLOT_PARENT_TYPES.has(parent?.type ?? '') || (slotName === 'body' && ['Kanban', 'ShadKanban', 'FlexContainer'].includes(parent?.type ?? ''));
     // A child in a tab the Tabs does not have is saved but never shown (review 2026-09-25). Static tabItems only:
     // with useDynamicOptions the ids come from a binding.
-    if (parent?.type === 'Tabs' && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
+    if (parent && TABS_TYPES.has(parent.type ?? '') && isTabSlot(slotName) && !isTruthyBinding(propVal(parent.properties, 'useDynamicOptions'))) {
       const items = propVal(parent.properties, 'tabItems');
       const ids = Array.isArray(items) ? items.map((item) => String((item as Record<string, unknown>)?.id ?? '')) : undefined;
       if (ids && !ids.includes(slotName.slice('tab-'.length))) {
@@ -770,14 +819,170 @@ export function lintComponentSlots(components: LintComponent[]): string[] {
     if (parent && !validParent) {
       errors.push(
         `Component "${component.name ?? component.id ?? component.type}" uses slot_name:"${slotName}" with ` +
-          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2, Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
+          `${parent.type ?? 'unknown'} parent "${parent.name ?? parent.id}"; header/body/footer belong to ModalV2 (and ShadDialog), Form, and Container (header and body also to Accordion); Kanban supports body (card) and modal; tab-t0, tab-t1 ... belong to Tabs.`
+      );
+    }
+  }
+  errors.push(...lintPackItemSlots(components));
+  return errors;
+}
+
+/** A child on a canvas its pack container does not draw: saved, never shown and unreachable in the editor. A plain
+ *  parent is the body canvas, which a Split Pane, Stepper, Accordion Container or tabs container has none of (DVRL-129);
+ *  an item canvas (tab_<id>, step_<id> ...) goes when the item's id is renamed or the item removed. A pack component
+ *  that draws no canvas (a Button) holds no child at all. `persisted`: the components are as saved, where a child on the
+ *  container's bare id is never drawn either (a pack draws its body on "<id>-body"); a tool's input there means body. */
+export function lintPackItemSlots(components: LintComponent[], options: { persisted?: boolean } = {}): string[] {
+  const errors: string[] = [];
+  for (const container of components) {
+    const drawn = packCanvases(container.type, container.properties);
+    if (!drawn) continue;
+    const key = componentKey(container);
+    for (const component of components) {
+      const bare = !!container.id && component.parent === container.id && !component.slotName && !component.parentRef;
+      const slot =
+        key && component.parentRef === key
+          ? (component.slotName ?? 'body')
+          : container.id && component.parent === container.id
+            ? (component.slotName ?? 'body')
+            : container.id && component.parent?.startsWith(`${container.id}-`)
+              ? component.parent.slice(container.id.length + 1)
+              : undefined;
+      if (!slot) continue;
+      const label = `Component "${component.name ?? component.id ?? component.type}"`;
+      const where = `${container.type} "${container.name ?? container.id}"`;
+      const canvases = drawn.bound ? `${drawn.prefix}_<item id>` : [...drawn.names].join(', ') || 'none';
+      if (!drawn.bound && !drawn.names.size) {
+        errors.push(
+          `${label} is a child of ${where}, which draws no canvas, so it would be saved and never shown. ` +
+            'Parent it to a container (a Card, Split Pane, Stepper ...) or to the page.'
+        );
+        continue;
+      }
+      // A list's repeating rows are drawn on its own id (ToolJet's List view row): a child there is on the row, and one on
+      // "<id>-row" is where nothing draws.
+      if (bare && packSlotOnOwnId(container.type)) continue;
+      const suffixed = !!container.id && !!component.parent?.startsWith(`${container.id}-`);
+      if (suffixed && packRowSlotNames(container.type).includes(slot)) {
+        errors.push(
+          `${label} is saved on "${component.parent}", but ${where} draws its ${slot} on its own id, so it is not shown. ` +
+            `Move it with update_components (parent: ${container.name ?? container.id}, slot_name: ${slot}).`
+        );
+        continue;
+      }
+      if (options.persisted && bare) {
+        errors.push(
+          `${label} is saved on ${where}'s bare id, which a pack component never draws, so it is not shown. ` +
+            `Move it with update_components (parent + slot_name: ${canvases}).`
+        );
+        continue;
+      }
+      if (drawn.names.has(slot) || (drawn.bound && slot.startsWith(`${drawn.prefix}_`))) continue;
+      errors.push(
+        drawn.prefix && slot.startsWith(`${drawn.prefix}_`)
+          ? `${label} is on ${where}'s "${slot}" canvas, but no item of its ${drawn.property} has that id (its canvases: ${canvases}), ` +
+              'so it would be saved and never shown. Keep the item id, move the child to one of those canvases in the same call ' +
+              '(parent + slot_name), or delete it first with delete_components.'
+          : `${label} is on ${where}'s "${slot}" canvas, which it does not draw, so it would be saved and never shown. ` +
+              `Pass slot_name with the parent: ${canvases}.`
       );
     }
   }
   return errors;
 }
 
+/** The shadcn/ui Kanban shows child components only with cardLayout "custom", where each card renders them with its
+ *  own cardData; with the default Fields content they are saved but never shown, and a custom board without children
+ *  draws blank cards. */
+export function lintShadKanbanCards(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  for (const board of components.filter((component) => component.type === 'ShadKanban')) {
+    const key = componentKey(board);
+    if (!key) continue;
+    const custom = propVal(board.properties, 'cardLayout') === 'custom';
+    const children = components.filter((component) => parentPlacement(component)?.parentId === key);
+    const label = `ShadKanban "${board.name ?? board.id ?? 'ShadKanban'}"`;
+    if (children.length && !custom) {
+      warnings.push(
+        `${label} has ${children.length} card child component(s), but its cardLayout is not "custom", so they are never shown. ` +
+          'Set properties.cardLayout to "custom" (and cardHeight to the card content height), or remove the children and map fields instead.'
+      );
+    } else if (!children.length && custom) {
+      warnings.push(
+        `${label} uses cardLayout "custom" but has no card child components, so every card renders blank. ` +
+          'Add children with parent_ref to the board, laid out on the card canvas and bound to {{cardData.<field>}}, or use the default Fields content.'
+      );
+    }
+  }
+  return warnings;
+}
+
+/** One day on a Schedule's days scale is a single column, every booking a bar across the whole width (the widget now
+ *  draws it by its hours, but the build should say what it means): a one-day room board is scale "hours". Scale
+ *  "hours" ignores days, and the catalogue default sets days 7, so that pairing is not a finding. */
+export function lintShadScheduleScale(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  const unwrap = (value: unknown) => String(value ?? '').trim().replace(/^\{\{\s*['"]?(.*?)['"]?\s*\}\}$/, '$1');
+  for (const schedule of components.filter((component) => component.type === 'ShadSchedule')) {
+    const days = unwrap(propVal(schedule.properties, 'days'));
+    if (unwrap(propVal(schedule.properties, 'scale')) !== 'days' || !/^\d+$/.test(days) || Number(days) > 1) continue;
+    warnings.push(
+      `ShadSchedule "${schedule.name ?? schedule.id ?? 'ShadSchedule'}" uses scale "days" with days ${days}. A one-day room or ` +
+        'resource board is scale "hours" with dayStart and dayEnd (and slotMinutes); scale "days" is the multi-day overview, a column a day.'
+    );
+  }
+  return warnings;
+}
+
+/** Whether a string opens a {{ binding that no }} closes: ToolJet then shows the whole expression as text. */
+export function hasUnclosedBinding(value: string): boolean {
+  let at = value.indexOf('{{');
+  while (at !== -1) {
+    const close = value.indexOf('}}', at + 2);
+    if (close === -1) return true;
+    at = value.indexOf('{{', close + 2);
+  }
+  return false;
+}
+
+/** Whether a string opens a second {{ before the first binding's }} closes. */
+export function hasNestedBinding(value: string): boolean {
+  let at = value.indexOf('{{');
+  while (at !== -1) {
+    const close = value.indexOf('}}', at + 2);
+    if (close === -1) return false;
+    const inner = value.indexOf('{{', at + 2);
+    if (inner !== -1 && inner < close) return true;
+    at = value.indexOf('{{', close + 2);
+  }
+  return false;
+}
+
 /** Cross-component Kanban checks that require seeing both the board and its card children. */
+/** Three or more tables reading one query, each filtered to its own value, are a board drawn as tables (a recruiting
+ *  pipeline drew a table per stage). Advice, not a rule: the board is one component with drag between stages. */
+export function lintStageTables(components: LintComponent[]): string[] {
+  const byQuery = new Map<string, string[]>();
+  for (const component of components) {
+    if (component.type !== 'Table' && component.type !== 'ShadTable') continue;
+    const data = propVal(component.properties as Record<string, unknown> | undefined, 'data');
+    if (typeof data !== 'string' || !/\.filter\s*\(/.test(data)) continue;
+    const query = /queries\.([A-Za-z_$][\w$]*)/.exec(data)?.[1];
+    if (!query) continue;
+    byQuery.set(query, [...(byQuery.get(query) ?? []), component.name ?? '?']);
+  }
+  const warnings: string[] = [];
+  for (const [query, names] of byQuery) {
+    if (names.length < 3) continue;
+    warnings.push(
+      `Tables ${names.slice(0, 5).map((n) => `"${n}"`).join(', ')} each show a filtered slice of queries.${query}: ` +
+        'if the slices are stages (status, stage, column), one ShadKanban board with statusField set to that field ' +
+        'shows them side by side with drag between stages. Keep the tables if they are separate views on purpose.'
+    );
+  }
+  return warnings;
+}
+
 export function lintKanbanInteractions(components: LintComponent[]): string[] {
   const warnings: string[] = [];
   const boards = components.filter((component) => component.type === 'Kanban');
@@ -998,6 +1203,64 @@ export function lintTableProjectionRender(spec: LintComponent, warnings: string[
 /** An empty-state message ("No users found", "Keine Nutzer gefunden.") with no visibility binding shows
  *  under a populated table (round nine, 2026-09-12). It must be bound to the data being empty. */
 const EMPTY_STATE_TEXT = /^(?:no\s+(?:\w+\s+){0,3}(?:found|available|yet|records?|results?|items?)|nothing\s+(?:found|available|yet)|keine?\s+\w+\s+gefunden)[.!\s]*$/i;
+/** A shadcn-look Table showing a state (status, stage, priority, severity) as plain text: advice to draw it as a chip.
+ *  Hotel, recruiting and construction builds (2026-10-10) listed "Occupied", "Delayed", "Critical" as bare words. */
+export function lintPlainStateColumns(spec: LintComponent): string[] {
+  if (spec.type !== 'Table') return [];
+  const look = propVal(spec.styles as Record<string, unknown> | undefined, 'tableLook');
+  if (look !== 'shadcn') return [];
+  const columns = propVal(spec.properties as Record<string, unknown> | undefined, 'columns');
+  if (!Array.isArray(columns)) return [];
+  const plain = columns
+    .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
+    .filter((c) => c.columnVisibility !== false && c.displayAsChip === undefined && ['string', 'text', undefined].includes(c.columnType as string | undefined))
+    .filter((c) => /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.key ?? '').replace(/[_\s-]+/g, '')) ||
+      /^(status|stage|state|priority|severity|availability|health|risk)$/i.test(String(c.name ?? '').trim()));
+  if (!plain.length) return [];
+  return [
+    `Table "${spec.name ?? '?'}": ${plain.map((c) => `"${c.name ?? c.key}"`).join(', ')} show a state as plain text. ` +
+      'Draw it as a chip so it reads at a glance: displayAsChip: true on the string column ("Show as status chip", the tone ' +
+      'read from the value: Paid green, Pending amber, Overdue red), or for tones of your own an html column whose data maps each value to ' +
+      '<span class="tj-chip tj-chip-success|warning|danger|info|neutral">Value</span> (theme-aware in light and dark).',
+  ];
+}
+
+/** A shadcn-look Table number column holding money with no currency sign: "Retail price 4.25" (2026-10-10 builds). */
+export function lintBareMoneyColumns(spec: LintComponent): string[] {
+  if (spec.type !== 'Table') return [];
+  if (propVal(spec.styles as Record<string, unknown> | undefined, 'tableLook') !== 'shadcn') return [];
+  const columns = propVal(spec.properties as Record<string, unknown> | undefined, 'columns');
+  if (!Array.isArray(columns)) return [];
+  const bare = columns
+    .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
+    .filter((c) => c.columnVisibility !== false && c.columnType === 'number' && !c.prefix && !c.suffix)
+    .filter((c) => /\b(price|amount|cost|total|revenue|balance|fees?|spend|spent|salary|budget|payment|subtotal|refund|mrr|arr)\b/i
+      .test(`${String(c.key ?? '')} ${String(c.name ?? '')}`.replace(/[_-]+/g, ' ')));
+  if (!bare.length) return [];
+  return [
+    `Table "${spec.name ?? '?'}": ${bare.map((c) => `"${c.name ?? c.key}"`).join(', ')} show money without a currency sign. ` +
+      'Set the number column\'s prefix to the sign the request uses ("$", "€", "£", "₹"); decimalPlaces 2 is applied for you.',
+  ];
+}
+
+/** A list of records drawn as one string in a text ("8:00 AM · Kofi James · Outer Sunset · repair • 9:00 AM · ..."): a
+ *  dispatch board of 2026-10-10 rendered each technician's jobs that way and read as unformatted text. */
+export function lintListDrawnAsText(spec: LintComponent): string[] {
+  if (!['ShadText', 'Text', 'ShadHeading'].includes(spec.type ?? '')) return [];
+  const value = propVal(spec.properties ?? {}, 'text');
+  if (typeof value !== 'string' || !value.includes('{{')) return [];
+  const mapped = /\.map\(\s*\(?\s*(\w+)[^=]*=>([\s\S]*?)\)\s*\.join\(/.exec(value);
+  if (!mapped) return [];
+  const item = mapped[1]!;
+  const fields = new Set([...mapped[2]!.matchAll(new RegExp(`\\b${item}\\.(\\w+)`, 'g'))].map((m) => m[1] ?? ""));
+  if (fields.size < 3) return [];
+  return [
+    `${spec.type} "${spec.name ?? '?'}": joins each record's ${fields.size} fields into one string, so a list reads as a run-on ` +
+      'line of text. Draw records as items: ShadListView (one row per record with its title, details and a badge), or ' +
+      'ShadKanban for a board grouped by a field (a column per technician, stage or day).',
+  ];
+}
+
 export function lintUnboundEmptyState(spec: LintComponent): string[] {
   if (spec.type !== 'Text' && spec.type !== 'Html') return [];
   const key = spec.type === 'Html' ? 'rawHtml' : 'text';
@@ -1018,7 +1281,7 @@ export function lintUnboundEmptyState(spec: LintComponent): string[] {
  *  panel on a round-nine docs page). Tab content is children placed with parent_ref and the tab's slot. */
 export function lintEmptyTabs(components: LintComponent[]): string[] {
   const errors: string[] = [];
-  for (const tabs of components.filter((component) => component.type === 'Tabs')) {
+  for (const tabs of components.filter((component) => TABS_TYPES.has(component.type ?? ''))) {
     const key = componentKey(tabs);
     if (!key) continue;
     // Tab children carry the tab index in their parent id ("<tabs>-0"), which the slot decoder leaves intact.
@@ -1095,6 +1358,7 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
   const childrenByParent = new Map<string, LintComponent[]>();
   for (const child of components) {
     const parentId = parentPlacement(child)?.parentId;
+    // Native Listview only: its 7px cell padding is what makes an inset child misplaced. shadcn grid cells have none.
     if (!parentId || refs.get(parentId)?.type !== 'Listview') continue;
     childrenByParent.set(parentId, [...(childrenByParent.get(parentId) ?? []), child]);
   }
@@ -1124,7 +1388,7 @@ export function lintListviewChildren(components: LintComponent[]): string[] {
 
   for (const child of components.filter((component) => component.type === 'Html')) {
     const parent = refs.get(parentPlacement(child)?.parentId ?? '');
-    if (parent?.type !== 'Listview') continue;
+    if (!parent || !LIST_TYPES.has(parent.type ?? '')) continue;
     const rawHtml = propVal(child.properties, 'rawHtml');
     if (typeof rawHtml !== 'string' || !/\bheight\s*:\s*\d+(?:\.\d+)?px\b/i.test(rawHtml)) continue;
     if (/\bheight\s*:\s*100%/i.test(rawHtml)) continue;
@@ -1214,7 +1478,7 @@ export function lintCanvasSideGutter(components: LintComponent[]): string[] {
   const MAX_RIGHT = 41;
   // Modals/drawers carry a trigger-ish desktop rect that is not page content, so a right-edge value
   // there is not a gutter problem.
-  const EXEMPT = new Set(['Modal', 'ModalV2', 'Drawer']);
+  const EXEMPT = new Set(['Modal', 'ModalV2', 'ShadDialog', 'Drawer']);
   const roots = components.filter(
     (component) => !parentPlacement(component) && !EXEMPT.has(component.type ?? '')
   );
@@ -1222,9 +1486,17 @@ export function lintCanvasSideGutter(components: LintComponent[]): string[] {
   // it is adding, and a page-level "no side gutter" verdict from that has no context behind it.
   // Mirrors lintDesktopCanvasCoverage, which guards the same way.
   if (roots.length < 3) return [];
+  // A container painted its own colour across the canvas is a full-bleed band (an app header, a hero strip), as the
+  // page-margin polish treats it (flexPolish.ts): it is meant to touch the edges. The agent blocks a build on this
+  // warning, so a SkyLine header written edge to edge was moved back into the gutter (2026-11-01).
+  const band = (component: LintComponent) => {
+    if (!['FlexContainer', 'Container'].includes(component.type ?? '')) return false;
+    const colour = String(propVal(component.styles, 'backgroundColor') ?? '').trim().toLowerCase();
+    return !!colour && colour !== 'transparent' && !colour.startsWith('var(--cc-appbackground');
+  };
   const offenders = roots.filter((component) => {
     const rect = component.layouts?.desktop ?? component.layout;
-    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number') return false;
+    if (!rect || typeof rect.left !== 'number' || typeof rect.width !== 'number' || band(component)) return false;
     return rect.left < MIN_LEFT || rect.left + rect.width > MAX_RIGHT;
   });
   if (!offenders.length) return [];
@@ -1258,6 +1530,10 @@ export function lintDesktopCanvasCoverage(components: LintComponent[]): string[]
 }
 
 /** Lint a single component spec (pre-write). */
+/** The keys ToolJet keeps on every library component: which library and component it draws. */
+// PackComponent (a shipped pack) carries `pack` and `componentName`; LibraryComponent the library identity.
+const LIBRARY_HOST_KEYS = new Set(['libraryId', 'libraryName', 'componentName', 'correlationId', 'pack']);
+
 /** Text-bearing property keys whose value the customer reads on screen. */
 const RENDERED_TEXT_KEYS = ['text', 'rawHtml', 'label', 'title', 'placeholder', 'description', 'subtitle', 'primaryValue', 'secondaryValue'];
 
@@ -1296,23 +1572,25 @@ export function lintRenderedText(spec: LintComponent): string[] {
   // Tabs has two item surfaces: static tabItems (the default "Tab 1 / Tab 2 / Tab 3") and dynamic tabs, read
   // only when useDynamicOptions is true. Authoring tabs alone leaves the defaults on screen: three pages of an
   // inventory build on 2026-09-12 shipped "Tab 1 / Tab 2 / Tab 3" beside fully authored tabs.
-  if (spec.type === 'Tabs') {
+  if (TABS_TYPES.has(spec.type ?? '')) {
     const dynamic = isTrueBinding(propVal(props, 'useDynamicOptions'));
     const tabs = propVal(props, 'tabs');
     const tabItems = propVal(props, 'tabItems');
-    const authoredItems = Array.isArray(tabItems) && tabItems.length > 0 &&
-      !tabItems.every((item) => /^Tab \d+$/.test(String((item as Record<string, unknown>)?.title ?? '')));
+    const titles = Array.isArray(tabItems) ? tabItems.map((item) => String((item as Record<string, unknown>)?.title ?? '')) : [];
+    const authoredItems = titles.length > 0 && !titles.every((title) => /^Tab \d+$/.test(title)) &&
+      !(spec.type === 'ShadTabs' && titles.join('|') === SHAD_TABS_DEFAULT_TITLES.join('|'));
     if (dynamic && (tabs === undefined || tabs === null || tabs === '')) {
       errors.push(`Tabs "${label}": useDynamicOptions is on but properties.tabs is empty, so nothing renders. Bind tabs to an array of {id, title}.`);
     } else if (!dynamic && !authoredItems) {
+      const placeholder = spec.type === 'ShadTabs' ? SHAD_TABS_DEFAULT_TITLES.join(' / ') : 'Tab 1 / Tab 2 / Tab 3';
       errors.push(
-        `Tabs "${label}": ToolJet renders properties.tabItems (default "Tab 1 / Tab 2 / Tab 3") unless useDynamicOptions is true; ` +
+        `${spec.type} "${label}": it renders properties.tabItems (default "${placeholder}") unless useDynamicOptions is true; ` +
           (tabs !== undefined ? 'the authored properties.tabs is ignored. ' : '') +
           'Either set properties.useDynamicOptions to "{{true}}" and keep tabs as [{id, title}], or author properties.tabItems with the real titles.'
       );
     }
   }
-  const itemsKey = spec.type === 'Tabs' ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
+  const itemsKey = TABS_TYPES.has(spec.type ?? '') ? undefined : CONTAINER_ITEMS[spec.type ?? ''];
   if (itemsKey) {
     // Steps (and the like) with advanced on render properties.schema instead (Steps.jsx reads advanced ? schema : steps).
     const dynamicSchema = isTruthyBinding(propVal(props, 'advanced')) ? propVal(props, 'schema') : undefined;
@@ -1471,10 +1749,12 @@ export function lintChartHouseStyle(spec: LintComponent, warnings: string[] = []
   return [];
 }
 
-/** Properties the inspector stores and the widget reads that the catalog does not list. */
+/** Properties the inspector stores and the widget reads that the catalog does not list. A FlexContainer's
+ *  layoutVersion picks its layout: ToolJet and the MCP write it on create, an author never sets it. */
 const INSPECTOR_ONLY_PROPERTIES: Record<string, string[]> = {
   PhoneInput: ['defaultCountry'],
   CurrencyInput: ['defaultCountry'],
+  FlexContainer: ['layoutVersion'],
 };
 
 export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?: string } = {}): LintResult {
@@ -1491,6 +1771,69 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       'Supply the intended text or binding; use an explicit empty string if this display is intentionally blank. ' +
       'Do not invent replacement copy or change its layout.'
     );
+  }
+
+  // A ModuleViewer shows the module its moduleAppId names. add_components wrote one with properties {}: it showed
+  // nothing, and ToolJet failed every load of the app with a 500 (QA DVRL-1, 2026-11-12; the server skips it now).
+  if (spec.type === 'ModuleViewer' && !String(propVal(props, 'moduleAppId') ?? '').trim()) {
+    errors.push(
+      `ModuleViewer "${label}" needs properties.moduleAppId, the co_relation_id of a module app in this workspace. ` +
+        'Without one it shows nothing, and a ToolJet server without the fix fails to load the app. ' +
+        'Place the module in the ToolJet editor if its id is not known.'
+    );
+  }
+
+  // A binding nested inside another (a per-row "{{rowData.x}}" inside a "{{[...]}}" columns binding) ends the outer
+  // one at its first "}}": the property resolves to a broken fragment (a shadcn Table fell back to generated columns,
+  // 2026-10-10).
+  for (const key of Object.keys(props)) {
+    const value = propVal(props, key);
+    if (typeof value === 'string' && hasUnclosedBinding(value)) {
+      errors.push(
+        `Component "${label}".properties.${key} opens a {{ binding that never closes, so ToolJet shows the expression as text. ` +
+          'End it with "}}" (an array or object literal needs its own closing bracket and brace before the final "}}").'
+      );
+    }
+    if (typeof value === 'string' && hasNestedBinding(value)) {
+      errors.push(
+        `Component "${label}".properties.${key} nests a {{ }} binding inside another; ToolJet ends the outer binding at the first "}}", so the value breaks. ` +
+          (spec.type === 'ShadTable'
+            ? 'For per-row styling use the column\'s conditionalStyles ([{ condition, value, textColor, backgroundColor }]) and a button\'s disabledWhen / hiddenWhen ({ key, condition, value }) instead of bindings.'
+            : 'Compute the inner value in the outer expression, or in a JavaScript query.')
+      );
+    }
+  }
+
+  // The shadcn/ui pack's table is ToolJet's own Table in its shadcn look (styles.tableLook), with every Table feature
+  // and convention; ShadTable stays registered only so existing apps keep working.
+  if (spec.type === 'ShadTable') {
+    warnings.push(
+      `ShadTable "${label}" is superseded: for a new table use type "Table" with styles.tableLook "shadcn" ` +
+        "(ToolJet's own Table in the ToolJet UI 2.0 look, with its columns, row action buttons, events and inspector)."
+    );
+  }
+
+  // A shadcn Table with dynamic height off scrolls inside its drawn height (ShadTable.jsx: toolbar 56px, footer
+  // 52px, header ~41px, rows 36/44/56px by cellSize). Drawn too short, it shows part of a page of rows with the
+  // cut-off row at the edge (a Luna build showed 5.5 of 10 rows, 2026-10-10).
+  if (spec.type === 'ShadTable' && isFalseBinding(propVal(props, 'dynamicHeight'))) {
+    const height = Number((spec as { layout?: { height?: unknown } }).layout?.height);
+    const paginated = !isFalseBinding(propVal(props, 'enablePagination'));
+    const rows = Number(String(propVal(props, 'rowsPerPage') ?? '10').replace(/[{}\s]/g, '')) || 10;
+    if (paginated && Number.isFinite(height) && height > 0) {
+      const off = (key: string) => isFalseBinding(propVal(props, key));
+      const on = (key: string) => isTrueBinding(propVal(props, key));
+      const toolbar = !off('displaySearchBox') || !off('showFilterButton') || !on('hideColumnSelectorButton') ||
+        on('showDownloadButton') || on('showRefreshButton');
+      const rowHeight = ({ condensed: 36, spacious: 56 } as Record<string, number>)[String(propVal(props, 'cellSize'))] ?? 44;
+      const needed = (toolbar ? 56 : 0) + 52 + 41 + rows * rowHeight;
+      if (height < needed) {
+        errors.push(
+          `ShadTable "${label}" has dynamicHeight off and height ${height}px, but ${rows} rows per page needs at least ${needed}px, so rows are cut off inside it. ` +
+            `Remove dynamicHeight:false (the table then fits its rows), raise the height to ${needed}, or lower rowsPerPage.`
+        );
+      }
+    }
   }
 
   if (spec.type === 'Table') {
@@ -1575,10 +1918,10 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
 
   // A ModalV2 keeps its catalog default useDefaultButton:true, so a "Launch Modal" trigger button renders at the
   // modal's own coordinates: on 2026-09-12 that was the stray dark block at the bottom of two inventory-build pages.
-  if (spec.type === 'ModalV2' && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
+  if (isModalV2Type(spec.type) && !isFalseBinding(propVal(props, 'useDefaultButton'))) {
     const top = (spec.layouts?.desktop ?? spec.layout)?.top;
     errors.push(
-      `ModalV2 "${label}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger ` +
+      `${spec.type} "${label}": properties.useDefaultButton is on (the catalog default), so ToolJet renders a "Launch Modal" trigger ` +
         `button at the modal's own coordinates${typeof top === 'number' ? ` (top ${top})` : ''} as a stray block on the page. ` +
         'Set properties.useDefaultButton to false and open the modal from your own Button with a show-modal event.'
     );
@@ -1612,7 +1955,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
 
   if (spec.slotName !== undefined) {
     if (!isComponentSlotName(spec.slotName)) {
-      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, or a Tabs tab (tab-t0, tab-t1, ...).`);
+      errors.push(`Component "${label}": unsupported slot_name "${String(spec.slotName)}"; use header, body, footer, Kanban modal, a Tabs tab (tab-t0, tab-t1, ...), or a pack widget's slot (body, tab_<key>, panel_<key>, first ...).`);
     }
     if (!spec.parentRef && !spec.parent) {
       errors.push(`Component "${label}": slot_name requires parent_ref or parent.`);
@@ -1620,7 +1963,7 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
   }
 
   // ERROR: style keys under `properties` are silently dropped by ToolJet.
-  const misplaced = Object.keys(props).filter((k) => STYLE_KEYS_IN_PROPERTIES.has(k));
+  const misplaced = Object.keys(props).filter((k) => isMisplacedStyleKey(spec.type, k));
   if (misplaced.length) {
     errors.push(
       `Component "${label}": style keys ${JSON.stringify(misplaced)} are under \`properties\`, where ToolJet ` +
@@ -1645,6 +1988,18 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       `Component "${label}": unknown component type "${spec.type}"; ToolJet may persist an unusable component.` +
         (suggestion ? ` Did you mean "${suggestion}"?` : ' Call get_component_catalog with no type to list supported types.')
     );
+  } else if (/^Shad[A-Z]/.test(spec.type) && defaultPack() && serverLibraryPacks().length) {
+    // A server that ships component packs has no ToolJet UI 2.0 Shad* widgets: a ShadButton written by an edit saved and
+    // drew "This widget is not available" (Rocket 2.0 todo app, logout button, staging 2026-10-29).
+    const name = spec.type.slice(4);
+    const matches = serverLibraryPacks().filter((p) => p.components[name]).map((p) => `${p.prefix}${name}`);
+    errors.push(
+      `Component "${label}": "${spec.type}" is not available on this ToolJet; UI 2.0 widgets draw as the app's component ` +
+        'pack. ' +
+        (matches.length
+          ? `Write the app's pack component instead: ${matches.join(' or ')} (the one matching the app's pack).`
+          : 'Call get_component_catalog for the pack components.')
+    );
   } else {
     const replacement = getLegacyComponentReplacement(spec.type);
     if (replacement) {
@@ -1664,6 +2019,18 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       if (knownKeys.includes(key)) continue;
       if (sectionName === 'property' && STYLE_KEYS_IN_PROPERTIES.has(key)) continue;
       if (sectionName === 'property' && INSPECTOR_ONLY_PROPERTIES[spec.type ?? '']?.includes(key)) continue;
+      // A pack widget (Lib_<pack>_<Component>) carries which library and component it draws: ToolJet's own keys, not
+      // the author's. Warned on, a pack app's lint ran to 88 such lines and was cut mid-JSON, so its pages were
+      // never applied (Together round, 2026-10-24).
+      if (sectionName === 'property' && spec.type?.startsWith('Lib_') && LIBRARY_HOST_KEYS.has(key)) continue;
+      const renamed = sectionName === 'property' ? retiredUi2Name(spec.type, 'properties', key) : undefined;
+      if (renamed) {
+        errors.push(
+          `Component "${label}": ${spec.type} property "${key}" was renamed "${renamed}"; the old key is ignored. ` +
+            `Write properties.${renamed} instead.`
+        );
+        continue;
+      }
       const aliasTarget = PROPERTY_KEY_ALIASES[key.toLowerCase()];
       const alias =
         aliasTarget && (knownKeys.includes(aliasTarget) || STYLE_KEYS_IN_PROPERTIES.has(aliasTarget))
@@ -1686,6 +2053,12 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
       }
     }
     for (const entry of entries) {
+      // A pack boolean or number property given a value the pack cannot use: it would read as false or unset.
+      const literal = propVal(authored, entry.key);
+      if (literal !== undefined && !isDynamicBinding(literal)) {
+        const typeError = packValueTypeError(spec.type, entry.key, entry.valueType, literal);
+        if (typeError) errors.push(`Component "${label}": ${typeError}`);
+      }
       if (!entry.allowedValues?.length) continue;
       if (spec.type === 'Form' && entry.key === 'buttonToSubmit') continue; // names a Button: lintFormSubmitButtons
       const value = propVal(authored, entry.key);
@@ -2212,7 +2585,12 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
           );
         }
       }
-      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !isTrueBinding(propVal(spec.styles, 'contentWrap'))) {
+      // The ToolJet UI 2.0 look (tableLook "shadcn") ends long text in an ellipsis on one-line rows, and normalization sets
+      // its contentWrap off: demanding wrap there refused every write to such a table (a deal tracker's two registers,
+      // twenty refusals, then rebuilt without Tables).
+      const tableLook = propVal(spec.styles, 'tableLook');
+      const uiTwoLook = (tableLook && typeof tableLook === 'object' ? (tableLook as { value?: unknown }).value : tableLook) === 'shadcn';
+      if (visibleColumnCount >= WRAP_REQUIRED_COLUMNS && !uiTwoLook && !isTrueBinding(propVal(spec.styles, 'contentWrap'))) {
         errors.push(
           `Table "${label}" has ${visibleColumnCount} columns and styles.contentWrap off (the catalog default), so any value wider than its ` +
             'cell (an email, a description, a timestamp) is cut mid word with no ellipsis. Set styles.contentWrap to true ' +
@@ -2449,18 +2827,39 @@ export function lintComponentSpec(spec: LintComponent, context: { surfaceAround?
   return { errors, warnings };
 }
 
-/** Pairwise desktop-rect overlap within a set of components. */
-export function detectOverlaps(components: LintComponent[]): string[] {
+/** Which components a geometry check knows about besides the ones it is given: FlexContainers already on the
+ *  page that new children in the checked set target by id. */
+export interface GeometryContext {
+  flexContainerIds?: Iterable<string>;
+}
+
+/** Placement keys (see placementKey) of FlexContainer bodies. A FlexContainer lays its children out with CSS
+ *  flexbox in childOrder order, so their grid top/left are not where they render: two children at the same
+ *  coordinates are stacked, not overlapping, and their rects say nothing about siblings outside the container. */
+function flexPlacementKeys(components: LintComponent[], context: GeometryContext = {}): Set<string> {
+  const keys = new Set<string>();
+  for (const id of context.flexContainerIds ?? []) keys.add(`${id}::body`);
+  for (const component of components) {
+    if (component.type !== 'FlexContainer') continue;
+    for (const ref of [component.clientRef, component.id, component.name]) if (ref) keys.add(`${ref}::body`);
+  }
+  return keys;
+}
+
+/** Pairwise desktop-rect overlap within a set of components. Children of a FlexContainer are skipped: the browser
+ *  places them, so their authored rects cannot overlap each other or anything outside the container. */
+export function detectOverlaps(components: LintComponent[], context: GeometryContext = {}): string[] {
   const warnings: string[] = [];
+  const flexBodies = flexPlacementKeys(components, context);
   const items = components
-    .filter((c) => !(c.type === 'ModalV2' && isFalseBinding(propVal(c.properties, 'useDefaultButton'))))
+    .filter((c) => !(isModalV2Type(c.type) && isFalseBinding(propVal(c.properties, 'useDefaultButton'))))
     .map((c) => ({
       component: c,
       name: c.name ?? c.type ?? '?',
       r: c.layouts?.desktop ?? c.layout,
       parent: placementKey(c),
     }))
-    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r);
+    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r && !flexBodies.has(x.parent));
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       if (items[i].parent !== items[j].parent) continue;
@@ -2501,7 +2900,7 @@ export function lintHiddenModalHitTargets(components: LintComponent[]): string[]
   const interactive = new Set(['Button', 'ButtonGroup', 'ButtonGroupV2', 'Table', 'Kanban', 'Calendar', 'Map', ...FORM_INPUT_TYPES]);
   const warnings: string[] = [];
   for (const modal of components) {
-    if (modal.type !== 'ModalV2' || !isFalseBinding(propVal(modal.properties, 'useDefaultButton'))) continue;
+    if (!isModalV2Type(modal.type) || !isFalseBinding(propVal(modal.properties, 'useDefaultButton'))) continue;
     const a = modal.layouts?.desktop ?? modal.layout;
     if (!a) continue;
     const targets: string[] = [];
@@ -2514,7 +2913,7 @@ export function lintHiddenModalHitTargets(components: LintComponent[]): string[]
         targets.push(target.name ?? target.type ?? '?');
       }
     }
-    if (targets.length) warnings.push(`ModalV2 "${modal.name ?? '?'}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map(n=>`"${n}"`).join(', ')}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
+    if (targets.length) warnings.push(`${modal.type} "${modal.name ?? '?'}" hides its launch button but its canvas footprint overlaps interactive component(s) ${targets.map(n=>`"${n}"`).join(', ')}. The invisible wrapper can intercept clicks even with useDefaultButton:false. Move its footprint to unused canvas space, keeping modal contents in their own slots, and verify the actual trigger is clickable. Do not disable the modal or remove its open action.`);
   }
   return warnings;
 }
@@ -2525,11 +2924,12 @@ const TOOLBAR_BUTTON_TYPES = new Set(['Button', 'ButtonGroup']);
  *  A top-labelled input renders its label in the first 20px and its box below (see renderedHeight), so a
  *  button authored at the inputs' top sits on the label band, visibly above the fields. Measured on
  *  2026-09-12 in three Luna builds (todo, vendors, inventory): every toolbar button was misaligned. */
-export function lintToolbarButtonAlignment(components: LintComponent[]): string[] {
+export function lintToolbarButtonAlignment(components: LintComponent[], context: GeometryContext = {}): string[] {
   const errors: string[] = [];
+  const flexBodies = flexPlacementKeys(components, context);
   const items = components
     .map((c) => ({ component: c, name: c.name ?? c.type ?? '?', r: c.layouts?.desktop ?? c.layout, parent: placementKey(c) }))
-    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r);
+    .filter((x): x is { component: LintComponent; name: string; r: Rect; parent: string } => !!x.r && !flexBodies.has(x.parent));
   const grownInputs = items.filter((x) => renderedHeight(x.component, x.r) > (x.r.height ?? 0));
   if (!grownInputs.length) return errors;
   for (const button of items) {
@@ -2629,7 +3029,7 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     refs.get(parentPlacement(component)?.parentId ?? '');
   const modalChildren = components.filter((component) => {
     const parent = parentOf(component);
-    return parent?.type === 'ModalV2' || parent?.type === 'Modal';
+    return isModalV2Type(parent?.type) || parent?.type === 'Modal';
   });
   const bodyChildren = modalChildren.filter((component) => parentPlacement(component)?.slotName === 'body');
 
@@ -2669,11 +3069,11 @@ export function lintModalChildren(components: LintComponent[]): string[] {
     }
   }
 
-  for (const modal of components.filter((component) => component.type === 'ModalV2' || component.type === 'Modal')) {
+  for (const modal of components.filter((component) => isModalV2Type(component.type) || component.type === 'Modal')) {
     const key = componentKey(modal);
     if (!key) continue;
     const children = bodyChildren.filter((child) => parentPlacement(child)?.parentId === key);
-    if (modal.type === 'ModalV2' && !isFalseBinding(propVal(modal.properties, 'showHeader'))) {
+    if (isModalV2Type(modal.type) && !isFalseBinding(propVal(modal.properties, 'showHeader'))) {
       const headerChildren = modalChildren.filter((child) => {
         const placement = parentPlacement(child);
         return placement?.parentId === key && placement.slotName === 'header';
@@ -2701,7 +3101,7 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 
     const lowest = childBottoms.reduce((current, candidate) => candidate.bottom > current.bottom ? candidate : current);
     const modalHeight = staticNumber(propVal(modal.properties, 'modalHeight'), 400);
-    const isV2 = modal.type === 'ModalV2';
+    const isV2 = isModalV2Type(modal.type);
     const headerHeight = !isV2 || isFalseBinding(propVal(modal.properties, 'showHeader'))
       ? 0
       : staticNumber(propVal(modal.properties, 'headerHeight'), 80);
@@ -2726,10 +3126,10 @@ export function lintModalChildren(components: LintComponent[]): string[] {
 /** Geometry a customer sees as broken: components on top of each other, a toolbar button on the label
  *  band, modal or list children outside their parent. Filed as errors: on 2026-09-12 the same overlaps
  *  shipped in every round while they were warnings, because a model reads a warning as optional. */
-export function lintRenderedGeometryBlocking(components: LintComponent[]): string[] {
+export function lintRenderedGeometryBlocking(components: LintComponent[], context: GeometryContext = {}): string[] {
   return [
-    ...detectOverlaps(components),
-    ...lintToolbarButtonAlignment(components),
+    ...detectOverlaps(components, context),
+    ...lintToolbarButtonAlignment(components, context),
     ...lintModalChildren(components).filter((warning) => !MODAL_HEADER_ADVICE.test(warning)),
     ...lintListviewChildren(components),
   ];
@@ -2792,6 +3192,7 @@ export function lintNestedContainerWidths(components: LintComponent[]): string[]
  *  the page for nothing (merch m2 two re-plans, m8 two re-layouts and rowsPerPage 4; trace review 2026-09-24). */
 export function lintRenderedGeometryAdvisory(components: LintComponent[]): string[] {
   return [
+    ...lintFlexContainerFit(components),
     ...lintNestedContainerWidths(components),
     ...lintDesktopCanvasCoverage(components),
     ...lintCanvasSideGutter(components),
@@ -2799,13 +3200,59 @@ export function lintRenderedGeometryAdvisory(components: LintComponent[]): strin
   ];
 }
 
-export function lintRenderedGeometry(components: LintComponent[]): string[] {
-  return [...lintRenderedGeometryBlocking(components), ...lintRenderedGeometryAdvisory(components)];
+export function lintRenderedGeometry(components: LintComponent[], context: GeometryContext = {}): string[] {
+  return [...lintRenderedGeometryBlocking(components, context), ...lintRenderedGeometryAdvisory(components)];
+}
+
+function flexNumber(value: unknown, fallback: number): number {
+  const text = typeof value === 'string' ? value.replace(/[{}\s]/g, '').replace(/px$/, '') : value;
+  const n = typeof text === 'number' ? text : typeof text === 'string' && text !== '' ? Number(text) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** A FlexContainer's children keep their authored pixel heights (unless dynamicHeight), and the container keeps its
+ *  own height in the editor; it grows only in view mode with dynamicHeight on. Children that need more room than
+ *  the container has are cut off. Advisory: wrapping rows and dynamic children are estimates. */
+export function lintFlexContainerFit(components: LintComponent[]): string[] {
+  const warnings: string[] = [];
+  for (const container of components) {
+    if (container.type !== 'FlexContainer') continue;
+    const rect = container.layouts?.desktop ?? container.layout;
+    if (!rect || typeof rect.height !== 'number') continue;
+    const keys = new Set([container.clientRef, container.id, container.name].filter(Boolean).map((ref) => `${ref}::body`));
+    const children = components.filter((child) => child !== container && keys.has(placementKey(child)));
+    if (!children.length) continue;
+    const props = container.properties;
+    // Only a fixed height cuts content off: dynamic height is the create default (tooljetClient), and ToolJet always
+    // fits a card (shadcnCard) or a row to its content in the viewer (frontend dynamicHeightPolicy).
+    const dynamic = propVal(props, 'dynamicHeight');
+    if (dynamic === undefined || isTruthyBinding(dynamic)) continue;
+    if (propVal(props, 'cardStyle') === 'shadcnCard') continue;
+    const padding = flexNumber(propVal(props, 'padding'), 12);
+    const gap = flexNumber(propVal(props, 'gap'), 12);
+    const direction = String(propVal(props, 'direction') ?? 'column');
+    if (direction === 'row') continue;
+    const heights = children.map((child) => renderedHeight(child, child.layouts?.desktop ?? child.layout));
+    const content = direction === 'column'
+      ? heights.reduce((sum, h) => sum + h, 0) + gap * (children.length - 1)
+      : Math.max(...heights);
+    const needed = Math.ceil(content + 2 * padding + 2);
+    if (needed <= rect.height) continue;
+    warnings.push(
+      `FlexContainer "${container.name ?? container.id ?? '?'}": its ${children.length} ${direction === 'column' ? 'stacked ' : ''}children need about ` +
+        `${needed}px (heights${direction === 'column' ? ` + ${gap}px gaps` : ''} + ${padding}px padding top and bottom` +
+        `) but the container is ${rect.height}px tall, so the rest is cut off. ` +
+        'Raise its height, or set properties.dynamicHeight to {{true}} so it grows in view mode (the editor still shows the authored height).'
+    );
+  }
+  return warnings;
 }
 
 // Widgets that are legitimately a few pixels tall, or whose authored box is not what renders.
-const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'Modal', 'Icon']);
+const THIN_BY_DESIGN = new Set(['Divider', 'VerticalDivider', 'Spacer', 'ModalV2', 'ShadDialog', 'Modal', 'Icon']);
 const MIN_RENDERABLE_HEIGHT = 24;
+/** UI 2.0 widgets the app draws under 24px (packHeights.ts): a small-tone text line is 18px, a checkbox row 20. */
+const LOWER_RENDERABLE_HEIGHT: Record<string, number> = { ShadText: 18, ShadCheckbox: 20 };
 
 /** A model that mistakes the pixel grid for row units authors 14px headers, 10px inputs and 1px
  *  modals; every other lint passes and the app renders as a row of slivers. Measured on one Grok 4.5
@@ -2816,7 +3263,7 @@ export function lintUnrenderableHeights(components: LintComponent[]): string[] {
   for (const c of components) {
     if (!c.type || THIN_BY_DESIGN.has(c.type)) continue;
     const height = c.layouts?.desktop?.height;
-    if (typeof height !== 'number' || height >= MIN_RENDERABLE_HEIGHT) continue;
+    if (typeof height !== 'number' || height >= (LOWER_RENDERABLE_HEIGHT[c.type] ?? MIN_RENDERABLE_HEIGHT)) continue;
     errors.push(
       `${c.type} "${c.name ?? c.id ?? '?'}": desktop height ${height}px cannot render its content; heights are ` +
         `pixels on a 10px grid, not row units. Use at least ${MIN_RENDERABLE_HEIGHT}px (inputs 40, headers 60+, ` +
@@ -2913,7 +3360,7 @@ export function lintFormSubmitButtons(components: LintComponent[]): string[] {
 }
 
 /** Lint a batch: per-component checks + overlap detection across the batch. */
-export function lintComponents(components: LintComponent[], options: { canvasColor?: string } = {}): LintResult {
+export function lintComponents(components: LintComponent[], options: { canvasColor?: string } & GeometryContext = {}): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const around = surfaceAroundResolver(components, options.canvasColor);
@@ -2923,11 +3370,23 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
     // revalidated by lintComponentSpec when checking unrelated edits or app bindings.
     const nameError = componentNameError(c.name);
     if (nameError) errors.push(nameError);
+    // ToolJet's own hosts draw an empty box in an app: a module container always, a LibraryComponent or PackComponent
+    // naming no component (a custom library's copied component names its library and is kept).
+    const internal = c.type === 'ModuleContainer' ? internalComponentTypeNote(c.type) : null;
+    if (internal) {
+      errors.push(`Component "${c.name ?? c.type}": "${c.type}" ${internal} It is internal and cannot be written by a build.`);
+    }
+    const emptyHost = emptyLibraryHostError(c);
+    if (emptyHost) errors.push(emptyHost);
     const r = lintComponentSpec(c, { surfaceAround: around(c) });
     errors.push(...r.errors);
     errors.push(...lintStandardSingleLineInputHeight(c));
     errors.push(...lintButtonLabelWidth(c));
     warnings.push(...lintUnboundEmptyState(c));
+    warnings.push(...lintListDrawnAsText(c));
+    warnings.push(...lintPlainStateColumns(c));
+    warnings.push(...lintBareMoneyColumns(c));
+    warnings.push(...lintUnformattedNumbers(c));
     errors.push(...lintTableProjectionRender(c, warnings));
     errors.push(...lintStaticDisabledSurface(c));
     errors.push(...lintDefaultInputLabel(c));
@@ -2937,15 +3396,26 @@ export function lintComponents(components: LintComponent[], options: { canvasCol
   errors.push(...lintComponentSlots(components));
   errors.push(...lintFormSubmitButtons(components));
   warnings.push(...lintKanbanCardChildren(components));
+  warnings.push(...lintShadKanbanCards(components));
+  warnings.push(...lintShadScheduleScale(components));
+  warnings.push(...lintStageTables(components));
   warnings.push(...lintStatisticsRows(components));
   warnings.push(...lintEmptyTabs(components)); // a partial add may create the parent before its children
+  warnings.push(...lintCopiedCards(components));
+  warnings.push(...lintTallContainers(components));
+  warnings.push(...lintChartAccents(components));
+  warnings.push(...lintKpiCardGrids(components));
+  const maps = lintShadMaps(components);
+  errors.push(...maps.errors);
+  warnings.push(...maps.warnings);
+  errors.push(...lintTruthySelectionGuards(components));
   errors.push(...lintUnusableTextGeometry(components));
   errors.push(...lintUnrenderableHeights(components));
   errors.push(...lintOversizedWidths(components));
   for (const c of components) errors.push(...lintHtmlContentHeight(c), ...lintHtmlRootSurface(c, around(c)), ...lintUnguardedComponentRefs(c), ...lintEmbeddedBindingSyntax(c), ...lintChartDataShape(c), ...lintUnguardedSelectionText(c));
   warnings.push(...lintTextGeometry(components));
   for (const c of components) warnings.push(...lintSurfaceInsets(c));
-  errors.push(...lintRenderedGeometryBlocking(components));
+  errors.push(...lintRenderedGeometryBlocking(components, options));
   warnings.push(...lintRenderedGeometryAdvisory(components));
   warnings.push(...lintKanbanInteractions(components));
   warnings.push(...lintHiddenModalHitTargets(components));
@@ -3158,6 +3628,23 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
           'a plan client_ref is not a runtime component name. A fallback can hide the missing reference and silently ignore user input.'
       );
     }
+    // Its data is read (a binding, another query or an event) but the body never returns at the top level, so the
+    // data is always empty.
+    if (query.name && runjsReturnsNothing(code)) {
+      const name = query.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Searched in JSON text, so a bracket read's quotes arrive escaped.
+      const read = new RegExp(`queries\\s*(?:\\??\\.\\s*${name}|\\[\\s*\\\\?['"\`]${name}\\\\?['"\`]\\s*\\])\\s*\\??\\.\\s*data\\b`);
+      const elsewhere = JSON.stringify([
+        summary.pages.map((page) => page.components),
+        summary.queries.filter((other) => other.id !== query.id).map((other) => other.options),
+        summary.events,
+      ]);
+      if (read.test(elsewhere)) errors.push(
+        `RunJS query "${query.name}" never returns a value at the top level, but queries.${query.name}.data is read. ToolJet ` +
+          'uses the body\'s top-level return as the query\'s data, so it is always undefined and everything bound to it shows ' +
+          'empty. Write the body as statements that end in `return { ... }`, not as an expression such as `(() => { ... })()`.'
+      );
+    }
     const referencedNames = runjsQueryReferences(code);
     for (const name of referencedNames) {
       if (!queryNames.has(name)) errors.push(
@@ -3361,6 +3848,23 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     }
   }
 
+  // A board move is in lastCardMovement; lastSelectedCard is the card last clicked, which a drag does not change. A
+  // staging build (2026-10-18) saved drags with lastSelectedCard.status and .id: nothing was written, or the clicked
+  // card's old status was written back to it.
+  for (const e of summary.events) {
+    const ev = (e.event ?? {}) as Record<string, unknown>;
+    if (ev.eventId !== 'onCardMoved' || ev.actionId !== 'run-query') continue;
+    const board = allComponents.find((c) => c.id === e.sourceId);
+    if (!board?.name || !['ShadKanban', 'Kanban'].includes(String(board.type))) continue;
+    const query = summary.queries.find((q) => q.id === ev.queryId || (ev.queryName && q.name === ev.queryName));
+    const reads = new RegExp(`components\\??\\.${board.name.replace(/[$]/g, '\\$')}\\??\\.lastSelectedCard\\b`);
+    if (!query || !reads.test(JSON.stringify(query.options ?? {}))) continue;
+    const move = board.type === 'ShadKanban' ? `components.${board.name}.lastCardMovement.cardId and .to` :
+      `components.${board.name}.lastCardMovement.cardDetails.id and .destinationColumnId`;
+    errors.push(`Query "${query.name ?? query.id}" runs on ${board.name} onCardMoved but reads ${board.name}.lastSelectedCard, ` +
+      `the card last clicked, which a drag does not change. Save the move with ${move}.`);
+  }
+
   // Bindings to non-existent queries/components + re-run per-component render lints.
   const bindingSources = [
     ...allComponents.map((c) => ({ label: `Component "${c.name ?? c.id}"`, value: { p: c.properties, s: c.styles, v: c.validation, o: c.others } })),
@@ -3370,11 +3874,17 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
   warnings.push(...lintSelectedRowProjections(allComponents, bindingSources.filter(s => !s.label.startsWith('Component '))));
   for (const source of bindingSources) {
     errors.push(...lintComponentStateBindings(source.value, allComponents, source.label));
+    if (source.label.startsWith('Query ')) errors.push(...lintEmptyDateWrites(source.value, allComponents, source.label));
     if (!source.label.startsWith('Query ')) errors.push(...lintBindingNames(source.value, source.label));
+    for (const namespace of dynamicBindingNamespaces(source.value)) {
+      const kind = namespace === 'components' ? 'component' : 'query';
+      errors.push(`${source.label} builds a ${kind} name at runtime (${namespace}["a" + b]). ToolJet resolves only literal ` +
+        `names in {{ }}, so the read is always empty. Write ${namespace}.name or ${namespace}["exact name"].`);
+    }
     const seen = new Set<string>();
     for (const ref of bindingReferences(source.value)) {
       const names = ref.namespace === 'components' ? componentNames : queryNames;
-      // ToolJet saves references by id (components["<id>"]) and shows names on load: an id that belongs to
+      // ToolJet saves references by id (components.<id>) and shows names on load: an id that belongs to
       // an existing entity is valid (merch m9's clean apply failed validation on exactly this).
       const ids = ref.namespace === 'components' ? componentIds : queryIds;
       const key = `${ref.namespace}.${ref.name}`;
@@ -3384,19 +3894,19 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
           `is named "${ref.name}". Binding names are case-sensitive; use the persisted name.`);
       }
     }
+    // A query publishes a fixed set of values: validate_app passed {{queries.getData.dataa}}, which reads undefined and
+    // shows nothing (QA DVRL-112, 2026-11-12). A query that does not exist is reported above.
+    for (const read of unknownQueryMemberReads(source.value)) {
+      const query = summary.queries.find((q) => q.name === read.name || q.id === read.name);
+      const key = `queries.${query?.name ?? read.name}.${read.member}`;
+      if (!query || seen.has(key)) continue;
+      seen.add(key);
+      const meant = nearestCatalogKey(read.member, QUERY_PROPERTIES);
+      errors.push(`${source.label} reads ${key}, but a query has no ${read.member}; it reads undefined at runtime. ` +
+        (meant ? `Read queries.${query.name}.${meant}. ` : '') + `A query has ${QUERY_PROPERTIES.join(', ')}.`);
+    }
   }
   for (const c of allComponents) {
-    const blob = JSON.stringify({ p: c.properties ?? {}, s: c.styles ?? {} });
-    for (const m of blob.matchAll(/\{\{\s*queries\.([A-Za-z0-9_]+)/g)) {
-      if (!queryNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{queries.${m[1]}…}} but no query is named "${m[1]}".`);
-      }
-    }
-    for (const m of blob.matchAll(/\{\{\s*components\.([A-Za-z0-9_]+)/g)) {
-      if (!componentNames.has(m[1])) {
-        warnings.push(`Component "${c.name ?? c.id}" binds {{components.${m[1]}…}} but no component is named "${m[1]}".`);
-      }
-    }
     const r = lintComponentSpec({
       id: c.id,
       name: c.name ?? c.id,
@@ -3489,6 +3999,9 @@ export function validateAppStructure(summary: AppSummary, options: { canvasColor
     errors.push(...lintRenderedGeometryBlocking(p.components as LintComponent[]));
     warnings.push(...lintRenderedGeometryAdvisory(p.components as LintComponent[]));
     warnings.push(...lintKanbanInteractions(p.components as LintComponent[]));
+    warnings.push(...lintShadKanbanCards(p.components as LintComponent[]));
+    warnings.push(...lintShadScheduleScale(p.components as LintComponent[]));
+    warnings.push(...lintStageTables(p.components as LintComponent[]));
   }
   warnings.push(...lintInnerPageBands(summary));
   // Data-bound components whose query nothing runs render No data forever.

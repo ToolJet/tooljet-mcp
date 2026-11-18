@@ -137,3 +137,37 @@ describe('RunJS literal component references', () => {
     expect(good.errors).toEqual([]);
   });
 });
+
+describe('references ToolJet saved by id', () => {
+  // ToolJet saves a reference as components.<uuid>. Parsed as JS, a uuid whose dash-separated groups are each
+  // valid tokens reads as a subtraction (components.d9ccffce - ad5a - ...), so validation reported a missing
+  // component "d9ccffce" and the agent rewrote the binding to dodge it (18 Oct AI edit round).
+  const ids = ['d9ccffce-ad5a-4786-a3ea-afe3085ee06c', 'e7545056-15df-4c1e-9b1a-3a2b4c5d6e7f'];
+
+  it.each(ids)('reads components.%s as that id', id => {
+    expect(runjsComponentReferences(`return components.${id}?.value;`)).toEqual([id]);
+  });
+
+  const summary: AppSummary = {
+    app_id: 'a', name: 'Feedback', version_id: 'v', events: [],
+    pages: [{ id: 'home', name: 'Home', handle: 'home', components: ids.map((id, i) => (
+      { id, name: `field${i}`, type: 'ShadSelect', properties: {} })) }],
+    queries: [{ id: 'q', name: 'save_priority', kind: 'tooljetdb', options: {
+      operation: 'update_rows',
+      update_rows: { columns: { priority: `{{components.${ids[0]}?.value}}`, note: `{{components.${ids[1]}.value}}` } },
+    } }],
+  };
+
+  it('accepts saved id references in query options', () => {
+    expect(validateAppStructure(summary).errors.filter(e => e.includes('save_priority'))).toEqual([]);
+  });
+
+  it('refuses a binding that builds a component name at runtime', () => {
+    const built = structuredClone(summary);
+    built.queries[0]!.options = { operation: 'update_rows', update_rows: { columns: {
+      priority: '{{components["priority_" + "select"]?.value}}',
+    } } };
+    expect(validateAppStructure(built).errors.join(' '))
+      .toMatch(/Query "save_priority".*builds a component name.*literal/);
+  });
+});

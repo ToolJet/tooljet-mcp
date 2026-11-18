@@ -100,7 +100,8 @@ export function parserSourcePlugin() {
 }
 
 /** Discover module boundaries from esbuild's dependency graph; never cut JavaScript text. */
-export async function reviewableBundle(entry = './dist/index.js') {
+export async function reviewableBundle(entry = './dist/index.js', extension = '.js') {
+  if (!['.js', '.mjs'].includes(extension)) throw new Error('Unsupported bundle extension');
   const entryPoints = { index: entry };
   let result;
   const plugin = parserSourcePlugin();
@@ -108,7 +109,7 @@ export async function reviewableBundle(entry = './dist/index.js') {
     result = await build({
       absWorkingDir: root, entryPoints, bundle: true, platform: 'node', target: 'node20',
       format: 'esm', outdir: 'bundle', chunkNames: 'chunk-[hash]', splitting: true,
-      write: false, metafile: true, preserveSymlinks: true, external: ['playwright-core'],
+      write: false, metafile: true, preserveSymlinks: true, external: ['playwright-core', 'axe-core'],
       legalComments: 'none', plugins: [plugin],
       define: { 'process.env.BABEL_8_BREAKING': 'false', 'process.env.IS_PUBLISH': 'true' },
       banner: { js: 'import { createRequire as __bundleRequire } from "node:module"; const require = __bundleRequire(import.meta.url);' },
@@ -166,7 +167,7 @@ export async function reviewableBundle(entry = './dist/index.js') {
   try {
     const { output } = await bundle.generate({
       format: 'esm', manualChunks: (id) => groups.get(id), onlyExplicitManualChunks: true,
-      entryFileNames: 'index.js', chunkFileNames: 'chunk-[hash].js',
+      entryFileNames: `index${extension}`, chunkFileNames: `chunk-[hash]${extension}`,
     });
     for (const file of output) {
       // Reprint through a JS parser: trimming text would corrupt whitespace inside

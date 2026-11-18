@@ -69,6 +69,25 @@ describe('app settings tools', () => {
     expect(JSON.stringify(result.javascript_runtime)).not.toMatch(/not-a-url|hidden/);
   });
 
+  it('saves and reads back the component library', async () => {
+    const after = { ...before, global_settings: { ...before.global_settings, componentLibrary: 'pack:shadcn' } };
+    const client = {
+      getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(after),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const result = textOf(await updateAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, component_library: 'ui2' }));
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId, globalSettings: { componentLibrary: 'pack:shadcn' } });
+    expect(result.settings.component_library).toBe('pack:shadcn');
+
+    const lost = {
+      getAppSettings: vi.fn().mockResolvedValue(before),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const failed = await updateAppSettingsTool(lost).handler({ app_id: 'app1', version_id: versionId, component_library: 'ui1' });
+    expect(failed.isError).toBe(true);
+    expect(failed.content[0]!.text).toMatch(/component_library did not persist/);
+  });
+
   it('distinguishes the app header, whole navigation menu, and individual page visibility', () => {
     const tool = updateAppSettingsTool({} as ToolJetClient);
     expect(tool.description).toMatch(/hide_header controls the app header\/banner/i);
@@ -135,6 +154,36 @@ describe('app settings tools', () => {
       } },
     });
     expect(textOf(result)).toMatchObject({ updated_fields: 8, warnings: [] });
+  });
+
+  it('hides the app header and logo with the page menu unless told to keep them', async () => {
+    const hidden = { ...before, page_settings: { properties: { ...((before.page_settings as any).properties),
+      hideHeader: true, hideLogo: true, disableMenu: { value: '{{true}}', fxActive: false } } } };
+    const client = {
+      getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(hidden),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const result = textOf(await updateAppSettingsTool(client).handler({ app_id: 'app1', version_id: versionId, navigation_hidden: true }));
+    expect(client.updateAppSettings).toHaveBeenCalledWith({ appId: 'app1', versionId, pageSettings: { properties: {
+      hideHeader: true, hideLogo: true, disableMenu: { value: '{{true}}', fxActive: false } } } });
+    expect(result.note).toMatch(/header and logo were hidden/);
+
+    const kept = { ...before, page_settings: { properties: { ...((before.page_settings as any).properties),
+      hideHeader: false, hideLogo: true, disableMenu: { value: '{{true}}', fxActive: false } } } };
+    const keep = {
+      getAppSettings: vi.fn().mockResolvedValueOnce(before).mockResolvedValueOnce(kept),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    await updateAppSettingsTool(keep).handler({ app_id: 'app1', version_id: versionId, navigation_hidden: true, hide_header: false });
+    expect((keep.updateAppSettings as any).mock.calls[0][0].pageSettings.properties).toMatchObject({ hideHeader: false, hideLogo: true });
+
+    const shown = {
+      getAppSettings: vi.fn().mockResolvedValue(before),
+      updateAppSettings: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ToolJetClient;
+    const plain = textOf(await updateAppSettingsTool(shown).handler({ app_id: 'app1', version_id: versionId, navigation_hidden: false }));
+    expect((shown.updateAppSettings as any).mock.calls[0][0].pageSettings.properties).toEqual({ disableMenu: { value: '{{false}}', fxActive: false } });
+    expect(plain).not.toHaveProperty('note');
   });
 
   it('fails when a setting is silently ignored on readback', async () => {

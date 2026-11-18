@@ -9,13 +9,15 @@ The tool layer. `npm run build:plugin` produces `bundle/index.js`, a modular std
 `tooljet-agent` spawns per build; its tools call ToolJet's REST API with the PAT or session token the
 agent passes, so an agent changes a ToolJet app directly instead of emitting a spec. It also ships
 `skills/tooljet-app-builder/`, the skill (system prompt) the agent loads. The repo is also its own
-Claude Code / Codex plugin marketplace (`.claude-plugin/`, `.codex-plugin/`, `mcp.json` runs the prebuilt bundle).
+Claude Code / Codex plugin marketplace. Claude installs the local MCP + skill package from the root of `chore/claude-plugin-dist`;
+standalone clients use `mcp.json` and the prebuilt bundle.
 
 ## 2. Place in the stack
 
 ```
 tooljet-agent ──stdio spawn──► tooljet-mcp bundle/index.js ──REST──► ToolJet
-Claude Code / Codex ──stdio (plugin)──► tooljet-mcp bundle/index.js ──REST──► ToolJet
+Codex / standalone ──stdio──► tooljet-mcp bundle/index.js ──REST──► ToolJet
+Claude plugin ──stdio──► installed bundle/index.mjs ──REST──► ToolJet
 ToolJet AI shim ──HTTP, gateway mode──► tooljet-mcp ──REST──► ToolJet
 tooljet-mcp ──POST /internal/mcp/verify-origin──► ai-api-gateway   (only if MCP_GATEWAY_URL set)
 ```
@@ -43,6 +45,7 @@ tooljet-mcp ──POST /internal/mcp/verify-origin──► ai-api-gateway   (on
 ```bash
 npm install
 npm run build:plugin        # tsc -> dist/, esbuild -> bundle/index.js
+npm run build:claude-plugin # local Claude MCP server, explicit configuration, and shared skill
 npm run build:skill-plugin  # guidance-only plugin for an existing MCP connection
 npm test
 npm run dev                 # stdio standalone (needs TOOLJET_URL + TOOLJET_PAT)
@@ -57,12 +60,14 @@ Rebuild the bundle after every pull: a stale bundle silently runs old tools.
 | `TOOLJET_DEPLOYMENT_URL` | deployment/frontend URL; `TOOLJET_APP_URL` is the deprecated alias |
 | `MCP_ALLOWED_API_ORIGINS` | HTTP mode allow-list for `x-tooljet-url`; unset = empty |
 | `MCP_SHARED_TOKEN` | turns HTTP into gateway mode (bearer gate, binds `0.0.0.0`) |
-| `MCP_REQUIRE_USER_SESSION` / `MCP_REQUIRE_REQUEST_URL` | gateway-mode gates: reject requests with no user credential / no `x-tooljet-url` (instead of writing into the static `TOOLJET_URL`) |
+| `MCP_REQUIRE_REQUEST_URL` | gateway-mode gate: reject requests with no `x-tooljet-url` (instead of writing into the static `TOOLJET_URL`). Gateway mode always rejects a request with no user credential; the process `TOOLJET_PAT` never acts for one (`MCP_REQUIRE_USER_SESSION` is no longer needed) |
+| `MCP_ALLOWED_HOSTS` / `MCP_ALLOWED_ORIGINS` | DNS-rebinding guard on the HTTP transports: extra `Host` names (beyond loopback and the bind address; on a `0.0.0.0` bind, setting it turns the Host check on) and browser origins (beyond loopback) a request may name |
 | `MCP_GATEWAY_URL` / `MCP_GATEWAY_TOKEN` | gateway origin check; off unless both set; token must equal the gateway's `MCP_GATEWAY_TOKEN` |
 
 ## 6. Gotchas
 
 - **Stale bundle or branch:** `git pull`, `npm run build:plugin`; check `bundle/index.js` mtime first when a build behaves oddly.
+- **Claude directory:** rebuild the ignored `plugins/tooljet-claude/` folder with `npm run build:claude-plugin` after tool/skill changes. Maintained metadata lives in `integrations/claude/`. This package must remain local stdio MCP + skill. PAT/URLs come only from declared Claude `userConfig`, never ambient standalone credentials. After successful main CI, the publishing workflow puts the tested artifact at the root of `chore/claude-plugin-dist`. Keep the existing listing's root path and change only its tracked branch; see README. Organization verification and reviewer clearance are external requirements.
 - **Split-origin `tj_url`:** tools hit whatever URL the agent passes; the fix is agent-side (`MCP_AGENT_TOOLJET_URL_OVERRIDE`).
 - **Skill dir** is `skills/tooljet-app-builder/`; the agent derives it from `TOOLJET_MCP_DIR`.
 - **PAT endpoint 404:** the instance predates PATs or `TOOLJET_URL` points at the frontend origin, not the API (`src/auth.ts`).
@@ -70,6 +75,8 @@ Rebuild the bundle after every pull: a stale bundle silently runs old tools.
 - **`x-tooljet-url` must be https**, so plain-http targets only work through the static `TOOLJET_URL` (`validateApiUrl`).
 - **`src/http.ts` has no bearer gate:** keep it on loopback; use `MCP_TRANSPORT=http` + `MCP_SHARED_TOKEN` for anything off-box.
 - **HTTP port default** (`TOOLJET_MCP_HTTP_PORT`, falls back to `PORT`) can clash with other local services; set it explicitly.
+
+- Workflow condition ports come from persisted `conditions[].id` (legacy: true/false); Human ports come from outcomes. Never edit only `code` on a modern condition. New node/input contracts live in `src/workflows/nodeContracts.ts`; update the compiler, tool catalog, generated guidance, and regression tests together.
 
 ## 7. See also
 

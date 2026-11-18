@@ -178,7 +178,8 @@ describe('management action contracts', () => {
   const confirmed = { confirm: true };
   function backend() {
     return {
-      listAppPermissionSubjects: vi.fn().mockResolvedValue({ users: [], groups: [] }),
+      listAppPermissionSubjects: vi.fn().mockResolvedValue({ users: [{ id: member, email: 'observer@example.test' }], groups: [] }),
+      getLicenseFeatureAccess: vi.fn().mockResolvedValue({}),
       getAppSummary: vi.fn().mockResolvedValue({ app_id: app, pages: [{ id: page, name: 'Observations', components: [] }], queries: [] }),
       getAppPermission: vi.fn().mockResolvedValue([]), setAppPermission: vi.fn().mockResolvedValue([]), clearAppPermission: vi.fn(),
       inviteWorkspaceUser: vi.fn(), updateWorkspaceUser: vi.fn().mockResolvedValue({ updated: true }), setWorkspaceUserArchived: vi.fn(),
@@ -198,6 +199,8 @@ describe('management action contracts', () => {
   }
   const cases = [
     ['list_app_permission_subjects', { app_id: app }, 'listAppPermissionSubjects'],
+    ['list_app_permission_screens', { app_id: app }, 'getAppSummary'],
+    ['list_app_permission_queries', { app_id: app }, 'getAppSummary'],
     ['get_app_resource_permission', resource, 'getAppPermission'],
     ['set_app_resource_permission', { ...resource, ...confirmed, access_type: 'users', user_ids: [member] }, 'setAppPermission'],
     ['clear_app_resource_permission', { ...resource, ...confirmed }, 'clearAppPermission'],
@@ -216,6 +219,7 @@ describe('management action contracts', () => {
     ['delete_workspace_group_access', { group_id: group, rule_id: rule, ...confirmed }, 'writeWorkspaceGroupAccess'],
     ['list_workspace_themes', { theme_id: theme }, 'listAppThemes'],
     ['create_workspace_theme', { name: 'Nebula', definition }, 'createAppTheme'],
+    ['create_workspace_theme', { name: 'Aurora Field', primary: '#7c3aed', font: 'Inter', radius: 8 }, 'createAppTheme'],
     ['set_default_workspace_theme', { theme_id: theme }, 'setDefaultAppTheme'],
     ['update_workspace_theme_definition', { theme_id: theme, definition }, 'updateAppThemeDefinition'],
     ['rename_workspace_theme', { theme_id: theme, name: 'Aurora' }, 'renameAppTheme'],

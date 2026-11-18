@@ -19,6 +19,16 @@ describe('canvas side gutter', () => {
     expect(lintCanvasSideGutter(page)).toHaveLength(1);
   });
 
+  // SkyLine in Ant Design (2026-11-01): the agent blocks a build on this warning, so a white header band written edge to
+  // edge was moved back into the gutter. A band painted its own colour is a deliberate full bleed; a table is not.
+  it('accepts a full-bleed band painted its own colour, and still flags content at the edge', () => {
+    const band = { ...c('header', 0, 43, 'FlexContainer'), styles: { backgroundColor: { value: '#ffffff' } } };
+    expect(lintCanvasSideGutter([band, c('b', 2, 18, 'Statistics'), c('ok', 2, 39)])).toEqual([]);
+    const plain = { ...c('header', 0, 43, 'FlexContainer'), styles: { backgroundColor: { value: 'transparent' } } };
+    expect(lintCanvasSideGutter([plain, c('b', 2, 18, 'Statistics'), c('ok', 2, 39)])).toHaveLength(1);
+    expect(lintCanvasSideGutter([band, c('b', 2, 18, 'Statistics'), c('t', 0, 43)])).toHaveLength(1);
+  });
+
   it('accepts the documented full-width row (left 2, width 39)', () => {
     expect(lintCanvasSideGutter([c('a', 2, 39, 'Text'), c('b', 2, 18, 'Statistics'), c('ok', 2, 39)])).toEqual([]);
   });

@@ -170,3 +170,13 @@ describe('workflow tools', () => {
     });
   });
 });
+
+it('marks thrown plan preflight errors as not written, without masking partial-write failures',async()=>{
+ planner.apply.mockReset().mockRejectedValueOnce(new Error('Expired plan'));
+ const tool=applyWorkflowSpecTool({workflows:{}} as any);
+ const rejected=await tool.handler({plan_token:VERSION_ID});
+ expect(rejected.isError).toBe(true);expect(JSON.parse(rejected.content[0].text)).toMatchObject({not_written:true,error:'Expired plan'});
+ planner.apply.mockResolvedValueOnce({failed:true,completed:[{query_id:'saved-query'}],graph_persistence:'unknown'});
+ const partial=await tool.handler({plan_token:VERSION_ID});
+ expect(partial.isError).toBe(true);expect(JSON.parse(partial.content[0].text)).not.toHaveProperty('not_written');
+});

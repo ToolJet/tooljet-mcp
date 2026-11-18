@@ -24,3 +24,15 @@ describe('offline skill contracts', () => {
     expect(withChildren).toBeGreaterThan(0);
   });
 });
+
+// 2026-10-14: the UI 2.0 pack widened these schemas to unions; the catalog said only "union" and hid the members.
+describe('union property types', () => {
+  it('lists the member types in the compact catalog', async () => {
+    const result = await getComponentCatalogTool(undefined as any).handler({ types: ['ShadCardGrid', 'ShadAreaChart', 'ShadSchedule'], sections: ['properties'] });
+    const props = Object.fromEntries(JSON.parse(result.content[0].text).components.map((c: any) => [c.type, c.properties]));
+    const prop = (type: string, key: string) => props[type].find((p: any) => p.key === key);
+    expect(prop('ShadCardGrid', 'metaFields')).toMatchObject({ valueType: 'union', valueTypes: ['array', 'string'] });
+    expect(prop('ShadAreaChart', 'seriesLabels')).toMatchObject({ valueType: 'union', valueTypes: ['object', 'array'] });
+    expect(prop('ShadSchedule', 'dayStart')).toMatchObject({ valueType: 'union', valueTypes: ['number', 'string'] });
+  });
+});

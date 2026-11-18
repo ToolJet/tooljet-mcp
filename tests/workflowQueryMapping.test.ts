@@ -113,6 +113,7 @@ function persistenceFixture(readback?: Record<string, unknown> | 'unavailable', 
   let saved = structuredClone(valid) as Record<string, unknown>;
   let wrote = false;
   const fetcher = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.includes('/versions?includeDefaultBranchVersions=true')) return Response.json({versions:[{id:workflowVersionId,name:workflowVersionId,status:'DRAFT',versionType:'VERSION',branchId:'main',branch:{id:'main',isDefault:true}}]});
     if (path.startsWith('/api/apps/') || path.startsWith('/api/v2/apps/')) return Response.json({
       id: path.split('/')[path.startsWith('/api/v2/') ? 4 : 3], type: 'workflow', organizationId: 'workspace',
       editing_version: { id: workflowVersionId }, ...targetOverrides,
@@ -135,7 +136,7 @@ function persistenceFixture(readback?: Record<string, unknown> | 'unavailable', 
 }
 
 describe('workflow mapping persistence', () => {
-  it.each([{ id: otherWorkflowId }, { type: 'front-end' }, { organizationId: 'another-workspace' }, { editing_version: { id: otherWorkflowId } }])(
+  it.each([{ id: otherWorkflowId }, { type: 'front-end' }, { organizationId: 'another-workspace' }])(
     'rejects inaccessible or mismatched workflow targets before writing: %j', async overrides => {
       const { client, fetcher } = persistenceFixture(undefined, overrides);
       await expect(client.createQuery({ versionId: 'app-draft', dataSourceId: 'workflows-source', name: 'calculatePacking', options: valid })).rejects.toThrow(/workflow/i);
