@@ -1148,7 +1148,7 @@ Unless the user said, ask before \`create_app\`: visual (ToolJet components) or 
 
 ## Component library
 
-Build in the app's \`component_library\` from \`get_app_summary\`: \`ui1\` (ToolJet UI 1.0, native widgets) or \`ui2\` (ToolJet UI 2.0, \`Shad*\` types in \`FlexContainer\`s). New apps are UI 2.0; an explicit request for the other wins (\`references/ui-layout.md\`).
+Honor the saved component library. For a named library, match \`component_libraries\` in \`get_app_summary\` (before creation, \`get_component_catalog(list_libraries=true)\`). Pass its exact \`library_selection\` to \`create_app\` or \`update_app_settings\` and use its \`Lib_<pack>_*\` types. Clarify unavailable or ambiguous names (\`references/ui-layout.md\`).
 
 ## Design quality — required outcomes, flexible composition
 

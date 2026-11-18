@@ -1991,6 +1991,18 @@ describe('add_components tool', () => {
 });
 
 describe('validate_app tool', () => {
+  it('requires the pre-build component IDs when checking a library selection', async () => {
+    const client = makeClient();
+    client.getAppSummary.mockResolvedValue({
+      app_id: 'sample', pages: [{ id: 'page', components: [{ id: 'old', name: 'counter', type: 'Text' }] }],
+      queries: [], events: [],
+    });
+    const tool = validateAppTool(client as unknown as ToolJetClient);
+    const result = await tool.handler({ app_id: 'sample', expected_library_selection: 'pack:polar' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('existing_component_ids');
+  });
+
   it('fetches the summary and reports structural errors/warnings', async () => {
     const client = makeClient();
     client.getAppSettings = vi.fn().mockResolvedValue({ global_settings: { canvasBackgroundColor: '#eef2ff' } });

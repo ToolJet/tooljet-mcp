@@ -1,5 +1,8 @@
 import { createRequire } from "node:module";
-import { e6 as __commonJS, e7 as __require } from "./chunk-BhoYgPP_.js";
+import { m as require_lib } from "./chunk-BZWhmyFq.js";
+import { p as parseExpression } from "./chunk-BNro-MpC.js";
+import { h as hubspotQueryIssues, s as singleSpecRef, a as apiEndpointQueryIssues } from "./chunk-BIWKBVpC.js";
+import { e6 as __commonJS, e8 as __require, e7 as __toESM } from "./chunk-BrqxMLVS.js";
 createRequire(import.meta.url);
 var require_moment = __commonJS({
   "node_modules/moment/moment.js"(exports, module) {
@@ -193,7 +196,7 @@ var require_moment = __commonJS({
           updateInProgress = false;
         }
       }
-      function isMoment(obj) {
+      function isMoment2(obj) {
         return obj instanceof Moment || obj != null && obj._isAMomentObject != null;
       }
       function warn(msg) {
@@ -2261,7 +2264,7 @@ var require_moment = __commonJS({
         if (typeof input === "string") {
           config._i = input = config._locale.preparse(input);
         }
-        if (isMoment(input)) {
+        if (isMoment2(input)) {
           return new Moment(checkOverflow(input));
         } else if (isDate(input)) {
           config._d = input;
@@ -2352,7 +2355,7 @@ var require_moment = __commonJS({
           return createLocal();
         }
         for (i = 0; i < moments.length; ++i) {
-          if (isMoment(moments[i])) {
+          if (isMoment2(moments[i])) {
             res = moments[i];
             break;
           }
@@ -2361,7 +2364,7 @@ var require_moment = __commonJS({
           return createInvalid$1();
         }
         for (++i; i < moments.length; ++i) {
-          if (isMoment(moments[i]) && (!moments[i].isValid() || moments[i][fn](res))) {
+          if (isMoment2(moments[i]) && (!moments[i].isValid() || moments[i][fn](res))) {
             res = moments[i];
           }
         }
@@ -2485,7 +2488,7 @@ var require_moment = __commonJS({
         var res, diff2;
         if (model._isUTC) {
           res = model.clone();
-          diff2 = (isMoment(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
+          diff2 = (isMoment2(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
           res._d.setTime(res._d.valueOf() + diff2);
           hooks.updateOffset(res, false);
           return res;
@@ -2739,7 +2742,7 @@ var require_moment = __commonJS({
         return typeof input === "string" || input instanceof String;
       }
       function isMomentInput(input) {
-        return isMoment(input) || isDate(input) || isString(input) || isNumber(input) || isNumberOrStringArray(input) || isMomentInputObject(input) || input === null || input === void 0;
+        return isMoment2(input) || isDate(input) || isString(input) || isNumber(input) || isNumberOrStringArray(input) || isMomentInputObject(input) || input === null || input === void 0;
       }
       function isMomentInputObject(input) {
         var objectTest = isObject(input) && !isObjectEmpty(input), propertyTest = false, properties = [
@@ -2824,7 +2827,7 @@ var require_moment = __commonJS({
         return new Moment(this);
       }
       function isAfter(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
+        var localInput = isMoment2(input) ? input : createLocal(input);
         if (!(this.isValid() && localInput.isValid())) {
           return false;
         }
@@ -2836,7 +2839,7 @@ var require_moment = __commonJS({
         }
       }
       function isBefore(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
+        var localInput = isMoment2(input) ? input : createLocal(input);
         if (!(this.isValid() && localInput.isValid())) {
           return false;
         }
@@ -2848,7 +2851,7 @@ var require_moment = __commonJS({
         }
       }
       function isBetween(from2, to2, units, inclusivity) {
-        var localFrom = isMoment(from2) ? from2 : createLocal(from2), localTo = isMoment(to2) ? to2 : createLocal(to2);
+        var localFrom = isMoment2(from2) ? from2 : createLocal(from2), localTo = isMoment2(to2) ? to2 : createLocal(to2);
         if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
           return false;
         }
@@ -2856,7 +2859,7 @@ var require_moment = __commonJS({
         return (inclusivity[0] === "(" ? this.isAfter(localFrom, units) : !this.isBefore(localFrom, units)) && (inclusivity[1] === ")" ? this.isBefore(localTo, units) : !this.isAfter(localTo, units));
       }
       function isSame(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input), inputMs;
+        var localInput = isMoment2(input) ? input : createLocal(input), inputMs;
         if (!(this.isValid() && localInput.isValid())) {
           return false;
         }
@@ -2985,7 +2988,7 @@ var require_moment = __commonJS({
         return this.localeData().postformat(output);
       }
       function from(time, withoutSuffix) {
-        if (this.isValid() && (isMoment(time) && time.isValid() || createLocal(time).isValid())) {
+        if (this.isValid() && (isMoment2(time) && time.isValid() || createLocal(time).isValid())) {
           return createDuration({ to: this, from: time }).locale(this.locale()).humanize(!withoutSuffix);
         } else {
           return this.localeData().invalidDate();
@@ -2995,7 +2998,7 @@ var require_moment = __commonJS({
         return this.from(createLocal(), withoutSuffix);
       }
       function to(time, withoutSuffix) {
-        if (this.isValid() && (isMoment(time) && time.isValid() || createLocal(time).isValid())) {
+        if (this.isValid() && (isMoment2(time) && time.isValid() || createLocal(time).isValid())) {
           return createDuration({ from: this, to: time }).locale(this.locale()).humanize(!withoutSuffix);
         } else {
           return this.localeData().invalidDate();
@@ -4126,7 +4129,7 @@ var require_moment = __commonJS({
       hooks.locale = getSetGlobalLocale;
       hooks.invalid = createInvalid$1;
       hooks.duration = createDuration;
-      hooks.isMoment = isMoment;
+      hooks.isMoment = isMoment2;
       hooks.weekdays = listWeekdays;
       hooks.parseZone = createInZone;
       hooks.localeData = getLocale;
@@ -4166,6 +4169,1823 @@ var require_moment = __commonJS({
     }));
   }
 });
+createRequire(import.meta.url);
+function assessRedisRead(options, datasourceId) {
+  const base = {
+    datasourceKind: "redis",
+    ...datasourceId ? { datasourceId } : {},
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false
+  };
+  const query = options.query;
+  if (typeof query !== "string" || !query || query.includes("{{") || /[\r\n\t\0]/.test(query)) {
+    return { ...base, reason: "Redis needs one static space-delimited command in options.query." };
+  }
+  const [raw, ...args] = query.split(" ");
+  if (!raw || args.some((arg) => !arg)) {
+    return { ...base, reason: "Redis commands must use single spaces, matching the plugin parser." };
+  }
+  const command = raw.toUpperCase();
+  const scalarArity = {
+    PING: 0,
+    DBSIZE: 0,
+    GET: 1,
+    TYPE: 1,
+    TTL: 1,
+    PTTL: 1,
+    STRLEN: 1,
+    HLEN: 1,
+    LLEN: 1,
+    SCARD: 1,
+    ZCARD: 1,
+    HGET: 2,
+    HEXISTS: 2,
+    SISMEMBER: 2,
+    ZSCORE: 2
+  };
+  if (Object.hasOwn(scalarArity, command) && args.length === scalarArity[command]) {
+    return { ...base, provenRead: true, directSafe: true, maxRows: 1 };
+  }
+  if (["MGET", "EXISTS", "HMGET"].includes(command)) {
+    const fields = args.length - (command === "HMGET" ? 1 : 0);
+    if (fields > 0 && fields <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows: command === "EXISTS" ? 1 : fields };
+    }
+  }
+  if (["LRANGE", "ZRANGE"].includes(command) && args.length === 3 && /^\d+$/.test(args[1]) && /^\d+$/.test(args[2])) {
+    const start = Number(args[1]);
+    const end = Number(args[2]);
+    const maxRows = end - start + 1;
+    if (Number.isSafeInteger(start) && Number.isSafeInteger(end) && maxRows > 0 && maxRows <= 1e3) {
+      return { ...base, provenRead: true, directSafe: true, maxRows };
+    }
+  }
+  const scanOffset = command === "SCAN" ? 0 : ["HSCAN", "SSCAN", "ZSCAN"].includes(command) ? 1 : -1;
+  let scan = scanOffset >= 0 && args.length > scanOffset && /^\d+$/.test(args[scanOffset]);
+  const seen = /* @__PURE__ */ new Set();
+  if (scan) {
+    for (let i = scanOffset + 1; i < args.length; i += 2) {
+      const option = args[i].toUpperCase();
+      const value = args[i + 1];
+      if (!value || seen.has(option) || !["MATCH", "COUNT", ...command === "SCAN" ? ["TYPE"] : []].includes(option) || option === "COUNT" && (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 1e3)) {
+        scan = false;
+        break;
+      }
+      seen.add(option);
+    }
+  }
+  if (scan || ["HGETALL", "HKEYS", "HVALS", "SMEMBERS"].includes(command) && args.length === 1) {
+    return {
+      ...base,
+      provenRead: true,
+      requiresRemoteReadConfirmation: true,
+      reason: "Redis collection/scan reads have no hard result bound. Use singular run_query with confirmed read access; SCAN COUNT is only a hint."
+    };
+  }
+  return { ...base, reason: `Redis command ${command} is not a supported bounded read. Writes, scripts, KEYS and administrative commands are not automatically executed.` };
+}
+var import_json5 = __toESM(require_lib());
+var import_moment = __toESM(require_moment(), 1);
+var Unsupported = class extends Error {
+};
+var MAX_EXPRESSION_CHARS = 600;
+var currentParameters;
+var MAX_PAD = 1e3;
+var MATH_FNS = {
+  floor: Math.floor,
+  ceil: Math.ceil,
+  round: Math.round,
+  abs: Math.abs,
+  trunc: Math.trunc,
+  sign: Math.sign,
+  min: Math.min,
+  max: Math.max,
+  pow: Math.pow,
+  sqrt: Math.sqrt
+};
+var MATH_CONSTANTS = { PI: Math.PI, E: Math.E };
+var UNITS = /* @__PURE__ */ new Set([
+  "year",
+  "years",
+  "y",
+  "quarter",
+  "quarters",
+  "Q",
+  "month",
+  "months",
+  "M",
+  "week",
+  "weeks",
+  "w",
+  "isoWeek",
+  "isoWeeks",
+  "day",
+  "days",
+  "d",
+  "date",
+  "hour",
+  "hours",
+  "h",
+  "minute",
+  "minutes",
+  "m",
+  "second",
+  "seconds",
+  "s",
+  "millisecond",
+  "milliseconds",
+  "ms"
+]);
+var none = (a) => a.length === 0;
+var MOMENT_METHODS = {
+  add: (a) => a.length === 2 && typeof a[0] === "number" && isUnit(a[1]),
+  subtract: (a) => a.length === 2 && typeof a[0] === "number" && isUnit(a[1]),
+  startOf: (a) => a.length === 1 && isUnit(a[0]),
+  endOf: (a) => a.length === 1 && isUnit(a[0]),
+  format: (a) => a.length === 0 || a.length === 1 && typeof a[0] === "string",
+  toISOString: none,
+  valueOf: none,
+  unix: none,
+  utc: none,
+  local: none,
+  clone: none,
+  isValid: none,
+  year: none,
+  quarter: none,
+  month: none,
+  date: none,
+  day: none,
+  isoWeekday: none,
+  week: none,
+  isoWeek: none,
+  hour: none,
+  minute: none,
+  second: none,
+  daysInMonth: none,
+  diff: (a) => a.length >= 1 && a.length <= 3 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])) && (a[2] === void 0 || typeof a[2] === "boolean"),
+  isBefore: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])),
+  isAfter: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1])),
+  isSame: (a) => a.length >= 1 && a.length <= 2 && isDateLike(a[0]) && (a[1] === void 0 || isUnit(a[1]))
+};
+var STRING_METHODS = {
+  toUpperCase: (s, a) => a.length ? unsupported() : s.toUpperCase(),
+  toLowerCase: (s, a) => a.length ? unsupported() : s.toLowerCase(),
+  trim: (s, a) => a.length ? unsupported() : s.trim(),
+  // A length past the cap is not resolved: shortening it would give a different answer than JavaScript.
+  padStart: (s, a) => s.padStart(capped(a[0], MAX_PAD), str(a[1] ?? " ")),
+  padEnd: (s, a) => s.padEnd(capped(a[0], MAX_PAD), str(a[1] ?? " ")),
+  slice: (s, a) => s.slice(num(a[0] ?? 0), a[1] === void 0 ? void 0 : num(a[1])),
+  substring: (s, a) => s.substring(num(a[0] ?? 0), a[1] === void 0 ? void 0 : num(a[1]))
+};
+function unsupported() {
+  throw new Unsupported();
+}
+function own(table, name) {
+  return typeof name === "string" && Object.prototype.hasOwnProperty.call(table, name) ? table[name] : void 0;
+}
+function isUnit(v) {
+  return typeof v === "string" && UNITS.has(v);
+}
+function isDateLike(v) {
+  return isMoment(v) || typeof v === "string" || typeof v === "number";
+}
+function isMoment(v) {
+  return typeof v === "object" && v !== null && v.kind === "moment";
+}
+function num(v) {
+  if (typeof v !== "number" || !Number.isFinite(v) || Math.abs(v) > 1e9)
+    unsupported();
+  return v;
+}
+function capped(v, max) {
+  const n = num(v);
+  if (n < 0 || n > max)
+    unsupported();
+  return n;
+}
+function str(v) {
+  if (typeof v !== "string")
+    unsupported();
+  return v;
+}
+function primitive(v) {
+  if (isMoment(v))
+    unsupported();
+  return v;
+}
+function box(m) {
+  return { kind: "moment", m };
+}
+function momentArgs(args) {
+  if (args.length > 2)
+    unsupported();
+  return args.map((a) => typeof a === "string" || typeof a === "number" ? a : unsupported());
+}
+function interpret(node) {
+  switch (node?.type) {
+    case "StringLiteral":
+    case "NumericLiteral":
+    case "BooleanLiteral":
+      return node.value;
+    case "NullLiteral":
+      return null;
+    case "Identifier":
+      if (node.name === "undefined")
+        return void 0;
+      if (node.name === "NaN")
+        return NaN;
+      if (node.name === "Infinity")
+        return Infinity;
+      return unsupported();
+    case "TemplateLiteral": {
+      let out = "";
+      node.quasis.forEach((q, i) => {
+        out += q.value.cooked ?? "";
+        if (i < node.expressions.length)
+          out += String(primitive(interpret(node.expressions[i])));
+      });
+      return out;
+    }
+    case "UnaryExpression": {
+      const v = primitive(interpret(node.argument));
+      if (node.operator === "!")
+        return !v;
+      if (node.operator === "-")
+        return -num(v);
+      if (node.operator === "+")
+        return typeof v === "string" ? Number(v) : num(v);
+      if (node.operator === "typeof")
+        return typeof v;
+      return unsupported();
+    }
+    case "BinaryExpression": {
+      const a = primitive(interpret(node.left));
+      const b = primitive(interpret(node.right));
+      switch (node.operator) {
+        case "+":
+          return typeof a === "string" || typeof b === "string" ? String(a) + String(b) : num(a) + num(b);
+        case "-":
+          return num(a) - num(b);
+        case "*":
+          return num(a) * num(b);
+        case "/":
+          return num(a) / num(b);
+        case "%":
+          return num(a) % num(b);
+        case "===":
+          return a === b;
+        case "!==":
+          return a !== b;
+        case "==":
+          return a == b;
+        // eslint-disable-line eqeqeq
+        case "!=":
+          return a != b;
+        // eslint-disable-line eqeqeq
+        case "<":
+          return a < b;
+        case ">":
+          return a > b;
+        case "<=":
+          return a <= b;
+        case ">=":
+          return a >= b;
+        default:
+          return unsupported();
+      }
+    }
+    case "LogicalExpression": {
+      const l = interpret(node.left);
+      if (node.operator === "&&")
+        return l ? interpret(node.right) : l;
+      if (node.operator === "||")
+        return l ? l : interpret(node.right);
+      if (node.operator === "??")
+        return l ?? interpret(node.right);
+      return unsupported();
+    }
+    case "ConditionalExpression":
+      return interpret(node.test) ? interpret(node.consequent) : interpret(node.alternate);
+    case "MemberExpression": {
+      if (node.computed)
+        return unsupported();
+      const name = node.property?.name;
+      if (node.object?.type === "Identifier" && node.object.name === "Math") {
+        const constant = own(MATH_CONSTANTS, name);
+        return constant ?? unsupported();
+      }
+      if (node.object?.type === "Identifier" && node.object.name === "parameters") {
+        if (!currentParameters || typeof name !== "string" || !Object.prototype.hasOwnProperty.call(currentParameters, name)) {
+          return unsupported();
+        }
+        return currentParameters[name];
+      }
+      const target = interpret(node.object);
+      if (typeof target === "string" && name === "length")
+        return target.length;
+      return unsupported();
+    }
+    case "CallExpression": {
+      const args = node.arguments.map((a) => a.type === "SpreadElement" ? unsupported() : interpret(a));
+      const callee = node.callee;
+      if (callee.type === "Identifier") {
+        if (callee.name === "moment")
+          return box((0, import_moment.default)(...momentArgs(args)));
+        if (callee.name === "String" && args.length === 1)
+          return String(primitive(args[0]));
+        if (callee.name === "Number" && args.length === 1)
+          return Number(primitive(args[0]));
+        if (callee.name === "parseInt" && args.length === 1)
+          return parseInt(str(args[0]));
+        if (callee.name === "parseInt" && args.length === 2)
+          return parseInt(str(args[0]), capped(args[1], 36));
+        if (callee.name === "parseFloat" && args.length === 1)
+          return parseFloat(str(args[0]));
+        return unsupported();
+      }
+      if (callee.type !== "MemberExpression" || callee.computed)
+        return unsupported();
+      const name = callee.property?.name;
+      const object = callee.object;
+      if (object.type === "Identifier" && object.name === "moment") {
+        if (name === "utc")
+          return box(import_moment.default.utc(...momentArgs(args)));
+        if (name === "unix" && args.length === 1)
+          return box(import_moment.default.unix(num(args[0])));
+        return unsupported();
+      }
+      if (object.type === "Identifier" && object.name === "Math") {
+        const fn = own(MATH_FNS, name);
+        return fn ? fn(...args.map((a) => num(a))) : unsupported();
+      }
+      if (object.type === "Identifier" && object.name === "Date" && name === "now" && args.length === 0)
+        return Date.now();
+      if (object.type === "Identifier" && object.name === "JSON" && name === "stringify" && args.length === 1) {
+        return JSON.stringify(primitive(args[0]));
+      }
+      const target = interpret(object);
+      if (isMoment(target)) {
+        const check = own(MOMENT_METHODS, name);
+        if (!check || !check(args))
+          return unsupported();
+        const unwrapped = args.map((a) => isMoment(a) ? a.m : a);
+        const result = target.m[name](...unwrapped);
+        if (import_moment.default.isMoment(result))
+          return box(result);
+        if (typeof result === "string" || typeof result === "number" || typeof result === "boolean")
+          return result;
+        return unsupported();
+      }
+      if (typeof target === "string") {
+        const fn = own(STRING_METHODS, name);
+        return fn ? fn(target, args) : unsupported();
+      }
+      if (typeof target === "number") {
+        if (name === "toFixed" && args.length <= 1)
+          return target.toFixed(args[0] === void 0 ? 0 : capped(args[0], 100));
+        if (name === "toString" && args.length === 0)
+          return String(target);
+        return unsupported();
+      }
+      return unsupported();
+    }
+    default:
+      return unsupported();
+  }
+}
+var SERVER_BINDING = /\{\{(.*?)\}\}/gs;
+function declaredParameterDefaults(options) {
+  const declared = options && typeof options === "object" ? options.parameters : void 0;
+  const values = /* @__PURE__ */ Object.create(null);
+  if (!Array.isArray(declared))
+    return values;
+  for (const parameter of declared) {
+    if (!parameter || typeof parameter !== "object")
+      continue;
+    const { name, defaultValue } = parameter;
+    if (typeof name !== "string" || !name || defaultValue === void 0 || defaultValue === null)
+      continue;
+    if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
+      values[name] = defaultValue;
+    } else if (typeof defaultValue === "string") {
+      if (!defaultValue.includes("{{")) {
+        values[name] = defaultValue;
+        continue;
+      }
+      const outcome = resolveString(defaultValue);
+      const value = outcome.ok ? outcome.value : void 0;
+      if (outcome.ok && (value === null || ["string", "number", "boolean"].includes(typeof value)))
+        values[name] = value;
+    }
+  }
+  return values;
+}
+function resolveStaticBindings(options) {
+  const previous = currentParameters;
+  currentParameters = declaredParameterDefaults(options);
+  try {
+    return resolveWithParameters(options);
+  } finally {
+    currentParameters = previous;
+  }
+}
+function resolveWithParameters(options) {
+  const resolved = {};
+  const unresolved = [];
+  const visit = (value) => {
+    if (typeof value === "string") {
+      if (!value.includes("{{") || !value.includes("}}"))
+        return;
+      const key = value.replace(/\n/g, " ");
+      if (key in resolved || unresolved.includes(key))
+        return;
+      const outcome = resolveString(value);
+      if (!outcome.ok) {
+        unresolved.push(key);
+        return;
+      }
+      resolved[key] = outcome.value;
+      for (const [binding, v] of outcome.parts)
+        resolved[binding.replace(/\n/g, " ")] = v;
+    } else if (Array.isArray(value))
+      value.forEach(visit);
+    else if (value && typeof value === "object")
+      Object.values(value).forEach(visit);
+  };
+  visit(options);
+  return { resolved, unresolved };
+}
+function resolveString(text2) {
+  const matches = [...text2.matchAll(SERVER_BINDING)];
+  if (!matches.length)
+    return { ok: false };
+  const parts = [];
+  for (const m of matches) {
+    const result = evaluate(m[1]);
+    if (!result.ok)
+      return { ok: false };
+    parts.push([m[0], result.value]);
+  }
+  if (matches.length === 1 && matches[0][0] === text2.trim())
+    return { ok: true, value: parts[0][1], parts: [] };
+  let i = 0;
+  return { ok: true, value: text2.replace(SERVER_BINDING, () => String(parts[i++][1])), parts };
+}
+function evaluate(expression) {
+  if (expression.length > MAX_EXPRESSION_CHARS)
+    return { ok: false };
+  try {
+    const value = interpret(parseExpression(expression));
+    if (isMoment(value))
+      return { ok: true, value: value.m.toISOString() };
+    if (typeof value === "number" && !Number.isFinite(value))
+      return { ok: false };
+    return { ok: true, value };
+  } catch {
+    return { ok: false };
+  }
+}
+function unresolvedNote(bindings) {
+  const shown = bindings.slice(0, 3).map((b) => b.length > 60 ? `${b.slice(0, 57)}...` : b).join(", ");
+  return `Browser-free run: ${bindings.length} binding(s) read live app state and ran as undefined (${shown}). Empty or failed results here do not show the viewer is wrong; check it in the viewer before rewriting the query.`;
+}
+function applyResolvedBindings(options, resolved) {
+  if (typeof options === "string") {
+    if (!options.includes("{{") || !options.includes("}}"))
+      return options;
+    const key = options.replace(/\n/g, " ");
+    return Object.prototype.hasOwnProperty.call(resolved, key) ? resolved[key] : options;
+  }
+  if (Array.isArray(options))
+    return options.map((value) => applyResolvedBindings(value, resolved));
+  if (options && typeof options === "object") {
+    return Object.fromEntries(Object.entries(options).map(([k, v]) => [k, applyResolvedBindings(v, resolved)]));
+  }
+  return options;
+}
+function resolvedBindingValues(resolved) {
+  return Object.entries(resolved).filter(([key]) => /^\{\{(?:(?!\}\})[\s\S])*\}\}$/.test(key)).map(([, value]) => value);
+}
+function emptyViewerOnlyParams(options, resolution) {
+  const params = options && typeof options === "object" ? options.query_params : void 0;
+  if (!Array.isArray(params))
+    return [];
+  const filled = [];
+  for (const pair of params) {
+    if (!Array.isArray(pair) || typeof pair[1] !== "string")
+      continue;
+    const key = pair[1].replace(/\n/g, " ");
+    if (!resolution.unresolved.includes(key))
+      continue;
+    resolution.resolved[key] = null;
+    resolution.unresolved = resolution.unresolved.filter((b) => b !== key);
+    filled.push(String(pair[0]));
+  }
+  return filled;
+}
+function emptyParamsNote(names) {
+  return `Ran with ${names.map((n) => `:${n}`).join(", ")} = null: ${names.length > 1 ? "they come" : "it comes"} from the app (a component or a picked row), which is empty outside the viewer. The query works for the empty case; check a value in the viewer.`;
+}
+var LABELS = {
+  postgresql: "PostgreSQL",
+  mysql: "MySQL",
+  mssql: "SQL Server",
+  mariadb: "MariaDB",
+  oracledb: "Oracle",
+  snowflake: "Snowflake",
+  databricks: "Databricks",
+  bigquery: "BigQuery",
+  clickhouse: "ClickHouse",
+  cosmosdb: "Cosmos DB",
+  couchbase: "Couchbase",
+  salesforce: "Salesforce",
+  harperdb: "HarperDB"
+};
+var MODE_SWITCH = /* @__PURE__ */ new Set(["postgresql", "mysql", "mssql"]);
+var GUI_ELSE_SQL = /* @__PURE__ */ new Set(["mariadb", "oracledb", "snowflake", "databricks"]);
+var GUI_SQL_KINDS = /* @__PURE__ */ new Set([...MODE_SWITCH, ...GUI_ELSE_SQL]);
+var SQL_DIALECT = {
+  postgresql: "postgresql",
+  tooljetdb: "postgresql",
+  mysql: "mysql",
+  mariadb: "mysql",
+  mssql: "mssql",
+  oracledb: "oracle"
+};
+var SQL_OPERATION = {
+  clickhouse: { operation: "sql", field: "query" },
+  cosmosdb: { operation: "query_database", field: "query" },
+  couchbase: { operation: "query", field: "query" },
+  salesforce: { operation: "soql", field: "soql_query" }
+};
+var GUI_LIST_ROWS_KEYS = /* @__PURE__ */ new Set(["where_filters", "order_filters", "aggregates", "group_by"]);
+var text = (options, field) => {
+  const value = options[field];
+  return typeof value === "string" && value.trim() ? value : void 0;
+};
+var connectorLabel = (kind) => LABELS[kind] ?? kind;
+function sqlConnectorPath(kind, options) {
+  const label = connectorLabel(kind);
+  const mode = options.mode;
+  const operation = options.operation;
+  if (GUI_SQL_KINDS.has(kind)) {
+    if (mode === "gui") {
+      if (operation === "list_rows")
+        return { path: "gui_list_rows" };
+      return {
+        path: "not_read",
+        reason: typeof operation === "string" && operation ? `${label} GUI operation "${operation}" is not a read (only list_rows reads).` : `${label} GUI query names no operation; only list_rows reads.`
+      };
+    }
+    const field = kind === "databricks" && !text(options, "query") ? "sql_query" : "query";
+    return { path: "sql", field, sql: text(options, field) };
+  }
+  if (kind === "bigquery") {
+    if (mode === "sql" || operation === "query")
+      return { path: "sql", field: "query", sql: text(options, "query") };
+    return {
+      path: "not_read",
+      reason: `BigQuery runs SQL text only in mode "sql" or operation "query"; this query runs operation "${String(operation ?? "<missing>")}".`
+    };
+  }
+  if (kind === "harperdb") {
+    if (mode !== void 0 && mode !== "sql") {
+      return { path: "not_read", reason: `HarperDB runs SQL text only in mode "sql"; this query is in mode "${String(mode)}".` };
+    }
+    return { path: "sql", field: "sql_query", sql: text(options, "sql_query") };
+  }
+  const sqlOperation = SQL_OPERATION[kind];
+  if (sqlOperation) {
+    if (typeof operation === "string" && operation && operation !== sqlOperation.operation) {
+      return {
+        path: "not_read",
+        reason: `${label} runs SQL text only for operation "${sqlOperation.operation}"; this query runs operation "${operation}".`
+      };
+    }
+    return { path: "sql", field: sqlOperation.field, sql: text(options, sqlOperation.field) };
+  }
+  return void 0;
+}
+var LARGE_READ_ROW_THRESHOLD = 1e3;
+var SQL_KINDS = /* @__PURE__ */ new Set([
+  "postgresql",
+  "mysql",
+  "mariadb",
+  "mssql",
+  "sqlserver",
+  "cockroachdb",
+  "redshift",
+  "snowflake",
+  "bigquery",
+  "clickhouse",
+  "oracle",
+  "oracledb",
+  "sqlite",
+  "databricks",
+  "athena",
+  "awsredshift",
+  "harperdb",
+  "ibmdb",
+  "saphana",
+  // SQL dialects assessSql already parses; each keeps its SQL in one operation, and the write
+  // operations carry no SQL field, so they still fall through to a refusal.
+  "spanner",
+  "presto",
+  "cosmosdb",
+  "couchbase",
+  "salesforce"
+]);
+var BILLABLE_SCAN_SQL_KINDS = /* @__PURE__ */ new Set(["bigquery", "snowflake", "redshift", "awsredshift", "athena", "databricks"]);
+function record(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+}
+function staticPositiveInteger(value) {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0)
+    return value;
+  if (typeof value !== "string")
+    return void 0;
+  const match = value.trim().match(/^(?:\{\{\s*)?(\d+)(?:\s*\}\})?$/);
+  return match ? Number(match[1]) : void 0;
+}
+function containsBinding(value) {
+  if (typeof value === "string")
+    return value.includes("{{");
+  if (Array.isArray(value))
+    return value.some(containsBinding);
+  return !!record(value) && Object.values(record(value)).some(containsBinding);
+}
+var SERVICENOW_ROW_READS = /* @__PURE__ */ new Set(["list_records"]);
+var SERVICENOW_SINGLE_READS = /* @__PURE__ */ new Set(["get_record", "aggregate"]);
+var SERVICENOW_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_tables",
+  "get_table_schema",
+  "get_field_choices",
+  "list_workflows",
+  "list_flows"
+]);
+function assessServiceNow(options, datasourceId) {
+  const identity = { datasourceKind: "servicenow", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  const table = typeof options.table === "string" ? options.table.trim() : "";
+  const source = table ? { kind: "remote_endpoint", value: `servicenow:${table}` } : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("ServiceNow query has no operation.");
+  if (!SERVICENOW_ROW_READS.has(operation) && !SERVICENOW_SINGLE_READS.has(operation) && !SERVICENOW_METADATA_READS.has(operation)) {
+    return refuse(`ServiceNow operation ${operation} is not a read; it can change ServiceNow state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...source ? { source } : {},
+    ...identity
+  };
+  if (SERVICENOW_SINGLE_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: operation === "aggregate",
+      maxRows: 1,
+      reason: `ServiceNow ${operation} reads remote data and consumes API quota.`
+    };
+  }
+  if (SERVICENOW_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `ServiceNow ${operation} reads remote metadata and consumes API quota.`
+    };
+  }
+  const maxRows = staticPositiveInteger(options.sysparm_limit);
+  if (maxRows === void 0) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      reason: "ServiceNow list_records has no static sysparm_limit, so its result size cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...remote,
+      countOnly: false,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `ServiceNow list_records can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return {
+    ...remote,
+    countOnly: false,
+    maxRows,
+    simpleSourceRead: true,
+    reason: "ServiceNow list_records reads remote data and consumes API quota."
+  };
+}
+function assessOpenapi(options, datasourceId) {
+  const identity = { datasourceKind: "openapi", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const method = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  if (method !== "get") {
+    return refuse(`OpenAPI method ${method ?? "<missing>"} is not a proven read; only GET queries can be previewed.`);
+  }
+  const path = typeof options.path === "string" ? options.path.trim() : "";
+  if (!path || containsBinding(path)) {
+    return refuse("OpenAPI preview requires a non-empty static path; dynamic endpoints must be verified in the viewer.");
+  }
+  if (containsBinding(options.params) || containsBinding(options.host)) {
+    return refuse("OpenAPI preview requires static host and parameters; binding-dependent requests must be verified in the viewer.");
+  }
+  const host = typeof options.host === "string" ? options.host.trim() : "";
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: `${host}${path}` },
+    reason: "OpenAPI GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
+var INFLUX_ROW_READS = /* @__PURE__ */ new Set(["query_data"]);
+var INFLUX_METADATA_READS = /* @__PURE__ */ new Set([
+  "list_buckets",
+  "retrieve_bucket",
+  "analyze_flux_query",
+  "abstract_syntax_tree",
+  "query_suggestions",
+  "query_suggestions_for_branching"
+]);
+var FLUX_WRITE_CALL = /(^|[^A-Za-z0-9_])(?:[A-Za-z_][A-Za-z0-9_]*\s*\.\s*)?(?:wideTo|to)\s*\(/;
+var FLUX_EGRESS_PACKAGES = [
+  "sql",
+  "kafka",
+  "mqtt",
+  "http",
+  "slack",
+  "pagerduty",
+  "discord",
+  "teams",
+  "telegram",
+  "bigpanda",
+  "opsgenie",
+  "sensu",
+  "servicenow",
+  "victorops",
+  "webexteams",
+  "zenoss",
+  "monitor",
+  "influxdata/influxdb/secrets",
+  "influxdata/influxdb/tasks"
+];
+var FLUX_EGRESS_IMPORT = new RegExp(String.raw`(^|\n)\s*import\s+(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:` + FLUX_EGRESS_PACKAGES.map((name) => name.replace(/\//g, String.raw`\/`)).join("|") + String.raw`)"`);
+var FLUX_LIMIT = /(^|[^A-Za-z0-9_.])limit\s*\(\s*n\s*:\s*(\d+)/;
+function assessInflux(options, datasourceId) {
+  const identity = { datasourceKind: "influxdb", ...datasourceId ? { datasourceId } : {} };
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!operation)
+    return refuse("InfluxDB query has no operation.");
+  if (!INFLUX_ROW_READS.has(operation) && !INFLUX_METADATA_READS.has(operation)) {
+    return refuse(`InfluxDB operation ${operation} is not a read; it can change InfluxDB state.`);
+  }
+  const remote = {
+    provenRead: true,
+    directSafe: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    ...identity
+  };
+  if (INFLUX_METADATA_READS.has(operation)) {
+    return {
+      ...remote,
+      countOnly: false,
+      reason: `InfluxDB ${operation} reads remote metadata without executing a query.`
+    };
+  }
+  const body = typeof options.body === "string" ? options.body : "";
+  if (!body.trim())
+    return refuse("InfluxDB query_data has no Flux body to classify.");
+  if (FLUX_WRITE_CALL.test(body)) {
+    return refuse("InfluxDB query_data body calls to()/wideTo(), which writes points or rows out of the query; that is not a read.");
+  }
+  const egress = body.match(FLUX_EGRESS_IMPORT);
+  if (egress) {
+    return refuse(`InfluxDB query_data body imports ${egress[0].trim()}, which can send data out of InfluxDB or read secrets; that is not a read.`);
+  }
+  const bucket = body.match(/from\s*\(\s*bucket\s*:\s*"([^"]+)"/)?.[1];
+  const source = bucket ? { kind: "remote_endpoint", value: `influxdb:${bucket}` } : void 0;
+  const bounded = { ...remote, countOnly: false, ...source ? { source } : {} };
+  const maxRows = staticPositiveInteger(body.match(FLUX_LIMIT)?.[2]);
+  if (maxRows === void 0) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      reason: "InfluxDB Flux query has no static limit(n:), so the number of points it returns cannot be bounded."
+    };
+  }
+  if (maxRows > LARGE_READ_ROW_THRESHOLD) {
+    return {
+      ...bounded,
+      requiresCountPreflight: true,
+      maxRows,
+      reason: `InfluxDB Flux query can return up to ${maxRows} points, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+    };
+  }
+  return { ...bounded, maxRows, reason: "InfluxDB query_data reads remote time-series data." };
+}
+function assessRestGet(options, datasourceId) {
+  const identity = { datasourceKind: "restapi", ...datasourceId ? { datasourceId } : {} };
+  const method = typeof options.method === "string" ? options.method.toLowerCase() : void 0;
+  if (method !== "get") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `REST method ${method ?? "<missing>"} is not a proven read; only static GET queries can be previewed.`,
+      ...identity
+    };
+  }
+  const url = typeof options.url === "string" ? options.url.trim() : "";
+  if (!url || containsBinding(url)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires a non-empty static url; dynamic endpoints must be verified in the viewer.",
+      ...identity
+    };
+  }
+  const requestFields = ["url_params", "headers", "cookies"].map((key) => options[key]);
+  if (requestFields.some(containsBinding)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "REST GET preview requires static request parameters/headers/cookies; binding-dependent requests must be verified in the viewer.",
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    requiresRemoteReadConfirmation: true,
+    source: { kind: "remote_endpoint", value: url },
+    reason: "REST GET may expose remote data, consume quota, or return an unbounded payload.",
+    ...identity
+  };
+}
+function assessSupabase(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const table = operation === "count_rows" ? options.count_table_name : options.get_table_name;
+  const identity = { datasourceKind: "supabase", ...datasourceId ? { datasourceId } : {} };
+  if (!["get_rows", "count_rows"].includes(operation) || typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Supabase operation is not a static row read.",
+      ...identity
+    };
+  }
+  const source = { kind: "remote_endpoint", value: `supabase:${table.trim().toLowerCase()}` };
+  if (operation === "count_rows") {
+    const countFilters = options.count_filters;
+    const fullSourceCount = countFilters == null || Array.isArray(countFilters) && countFilters.length === 0 || !!record(countFilters) && Object.keys(record(countFilters)).length === 0;
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  const maxRows = staticPositiveInteger(options.get_limit);
+  const unbounded = maxRows === void 0 || maxRows > LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: unbounded,
+    requiresRemoteReadConfirmation: true,
+    simpleSourceRead: true,
+    source,
+    maxRows,
+    ...identity,
+    ...unbounded ? { reason: `Supabase get_rows has no static get_limit at or below ${LARGE_READ_ROW_THRESHOLD}; set get_limit.` } : {}
+  };
+}
+var MONGO_ROW_READS = /* @__PURE__ */ new Set(["find_many"]);
+var MONGO_SINGLE_READS = /* @__PURE__ */ new Set(["find_one"]);
+var MONGO_COUNT_READS = /* @__PURE__ */ new Set(["count", "count_total"]);
+var MONGO_WRITE_STAGES = ["$out", "$merge"];
+function mongoOptions(raw) {
+  const direct = record(raw);
+  if (direct)
+    return direct;
+  if (typeof raw !== "string" || !raw.trim())
+    return void 0;
+  try {
+    if (containsBinding(raw))
+      return void 0;
+    return record(import_json5.default.parse(raw));
+  } catch {
+    return void 0;
+  }
+}
+function mongoPipelineWrites(pipeline) {
+  if (Array.isArray(pipeline))
+    return pipeline.some(mongoPipelineWrites);
+  const obj = record(pipeline);
+  return !!obj && Object.entries(obj).some(([key, value]) => MONGO_WRITE_STAGES.includes(key) || mongoPipelineWrites(value));
+}
+function assessMongo(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "mongodb", ...datasourceId ? { datasourceId } : {} };
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  const collection = options.collection;
+  if (typeof collection !== "string" || !collection.trim() || containsBinding(collection)) {
+    return refuse("MongoDB collection is missing or not statically known.");
+  }
+  const source = { kind: "gui_table", value: collection };
+  if (MONGO_COUNT_READS.has(operation)) {
+    const filter = options.filter;
+    const fullSourceCount = filter == null || filter === "" || !!record(filter) && Object.keys(record(filter)).length === 0 || typeof filter === "string" && ["{}", "{ }"].includes(filter.trim());
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  if (MONGO_SINGLE_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  if (operation === "aggregate") {
+    const rawOptions = options.options;
+    const aggregateOptions = rawOptions == null || rawOptions === "" ? {} : mongoOptions(rawOptions);
+    if (!aggregateOptions || containsBinding(rawOptions) || containsBinding(aggregateOptions)) {
+      return refuse("MongoDB aggregate options must be a statically known JSON5 object.");
+    }
+    if ("out" in aggregateOptions) {
+      return refuse("MongoDB aggregate options.out adds a $out stage, which writes a collection.");
+    }
+    let pipeline = options.pipeline;
+    if (containsBinding(pipeline))
+      return refuse("MongoDB aggregate pipeline is not statically known.");
+    if (typeof pipeline === "string") {
+      try {
+        pipeline = import_json5.default.parse(pipeline);
+      } catch {
+        return refuse("MongoDB aggregate pipeline must be valid JSON5 array text.");
+      }
+    }
+    if (!Array.isArray(pipeline) || pipeline.some((stage) => !record(stage))) {
+      return refuse("MongoDB aggregate pipeline must be a statically known array of stages.");
+    }
+    if (mongoPipelineWrites(pipeline)) {
+      return refuse("MongoDB aggregate pipeline contains a $out/$merge stage, which writes a collection.");
+    }
+    const last = record(pipeline.at(-1));
+    const maxRows2 = last && Object.keys(last).length === 1 && typeof last.$limit === "number" ? staticPositiveInteger(last.$limit) : void 0;
+    return {
+      provenRead: true,
+      directSafe: maxRows2 !== void 0 && maxRows2 <= LARGE_READ_ROW_THRESHOLD,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: maxRows2 === void 0 || maxRows2 > LARGE_READ_ROW_THRESHOLD,
+      source,
+      maxRows: maxRows2,
+      ...identity,
+      ...maxRows2 === void 0 ? { reason: "MongoDB aggregate has no statically provable row limit; add a final {$limit: N} pipeline stage. options.limit does not bound aggregation output." } : {}
+    };
+  }
+  if (operation === "distinct") {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: true,
+      source,
+      ...identity,
+      reason: "MongoDB distinct ignores options.limit and array fields can yield multiple values per document. Use a bounded aggregate with a final $limit stage."
+    };
+  }
+  if (!MONGO_ROW_READS.has(operation)) {
+    return refuse(`MongoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  const maxRows = staticPositiveInteger(mongoOptions(options.options)?.limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows,
+      source,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    maxRows,
+    source,
+    ...identity,
+    reason: maxRows === void 0 ? `MongoDB ${operation} has no statically provable row limit; set options.limit.` : `MongoDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+var SHEETS_METADATA_READS = /* @__PURE__ */ new Set(["info", "list_all_spreadsheets"]);
+var A1_ROW_RANGE = /^(?:[^!]*!)?[A-Z]*(\d+):[A-Z]*(\d+)$/i;
+function sheetsRangeRows(range) {
+  if (typeof range !== "string" || containsBinding(range))
+    return void 0;
+  const match = range.trim().match(A1_ROW_RANGE);
+  if (!match)
+    return void 0;
+  const rows = Number(match[2]) - Number(match[1]) + 1;
+  return rows > 0 ? rows : void 0;
+}
+function assessSheets(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "googlesheetsv2", ...datasourceId ? { datasourceId } : {} };
+  const spreadsheet = options.spreadsheet_id;
+  if (SHEETS_METADATA_READS.has(operation)) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresRemoteReadConfirmation: true,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (operation !== "read" && operation !== "list_all") {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `Google Sheets operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (typeof spreadsheet !== "string" || !spreadsheet.trim() || containsBinding(spreadsheet)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: "Google Sheets spreadsheet_id is missing or not statically known."
+    };
+  }
+  const sheet = typeof options.sheet === "string" && options.sheet.trim() ? `:${options.sheet.trim()}` : "";
+  const source = { kind: "remote_endpoint", value: `googlesheets:${spreadsheet.trim()}${sheet}` };
+  const maxRows = operation === "read" ? sheetsRangeRows(options.spreadsheet_range) : void 0;
+  const bounded = maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD;
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: !bounded,
+    requiresRemoteReadConfirmation: true,
+    source,
+    maxRows,
+    ...identity,
+    ...bounded ? {} : { reason: maxRows === void 0 ? `Google Sheets ${operation} has no statically bounded row range; set spreadsheet_range to an explicit A1 range such as A1:D100.` : `Google Sheets range covers ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.` }
+  };
+}
+function assessDynamo(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "dynamodb", ...datasourceId ? { datasourceId } : {} };
+  const table = options.table;
+  const refuse = (reason) => ({
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason,
+    ...identity
+  });
+  if (!["get_item", "query_table", "scan_table", "describe_table"].includes(operation)) {
+    return refuse(`DynamoDB operation ${operation || "<missing>"} is not a proven bounded read.`);
+  }
+  if (typeof table !== "string" || !table.trim() || containsBinding(table)) {
+    return refuse("DynamoDB table is missing or not statically known.");
+  }
+  const source = { kind: "gui_table", value: table.trim().toLowerCase() };
+  if (operation === "get_item" || operation === "describe_table") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      simpleSourceRead: true,
+      maxRows: 1,
+      source,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    simpleSourceRead: true,
+    source,
+    ...identity,
+    reason: `DynamoDB ${operation} has no statically provable row limit.`
+  };
+}
+function assessCouch(options, datasourceId) {
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : "";
+  const identity = { datasourceKind: "couchdb", ...datasourceId ? { datasourceId } : {} };
+  if (operation === "retrieve_record") {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (!["list_records", "get_view", "find"].includes(operation)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity,
+      reason: `CouchDB operation ${operation || "<missing>"} is not a proven bounded read.`
+    };
+  }
+  const limit = operation === "find" ? mongoOptions(options.body)?.limit : options.limit;
+  const maxRows = staticPositiveInteger(limit);
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? `CouchDB ${operation} has no statically provable row limit; set ${operation === "find" ? "limit in the request body" : "limit"}.` : `CouchDB ${operation} can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function stripSql(sql) {
+  return sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim().replace(/;\s*$/, "").trim();
+}
+function sqlStatementText(sql, backslashEscapes) {
+  let text2 = "";
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (char === "'" || char === '"' || char === "`") {
+      const quote = char;
+      text2 += quote + quote;
+      let closed = false;
+      while (++i < sql.length) {
+        if (sql[i] === "\\" && backslashEscapes) {
+          i++;
+          continue;
+        }
+        if (sql[i] !== quote)
+          continue;
+        if (sql[i + 1] === quote) {
+          i++;
+          continue;
+        }
+        closed = true;
+        break;
+      }
+      if (!closed)
+        return void 0;
+    } else if (char === "-" && sql[i + 1] === "-") {
+      while (i < sql.length && sql[i] !== "\n")
+        i++;
+      text2 += " ";
+    } else if (char === "/" && sql[i + 1] === "*") {
+      if (sql[i + 2] === "!")
+        return void 0;
+      const end = sql.indexOf("*/", i + 2);
+      if (end < 0)
+        return void 0;
+      i = end + 1;
+      text2 += " ";
+    } else
+      text2 += char;
+  }
+  return text2.trim().replace(/;\s*$/, "").trim();
+}
+function normalizeSqlTable(raw) {
+  return raw.split(".").map((part) => part.replace(/^[`"\[]|[`"\]]$/g, "")).join(".").toLowerCase();
+}
+function sqlSource(sql) {
+  const match = sql.match(/\bfrom\s+((?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?)/i);
+  return match ? { kind: "sql_table", value: normalizeSqlTable(match[1]) } : void 0;
+}
+function blankQuoted(sql) {
+  return sql.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"|`[^`]*`/g, (m) => " ".repeat(m.length));
+}
+function mainStatementAfterCtes(sql) {
+  const blank = blankQuoted(sql);
+  const head = /^with\s+(?:recursive\s+)?/i.exec(blank);
+  if (!head)
+    return void 0;
+  let i = head[0].length;
+  for (let guard = 0; guard < 50; guard++) {
+    const name = /^\s*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*(?:\([^()]*\)\s*)?as\s+(?:not\s+)?(?:materialized\s+)?\(/i.exec(blank.slice(i));
+    if (!name)
+      return void 0;
+    i += name[0].length;
+    let depth = 1;
+    while (i < blank.length && depth > 0) {
+      if (blank[i] === "(")
+        depth++;
+      else if (blank[i] === ")")
+        depth--;
+      i++;
+    }
+    if (depth !== 0)
+      return void 0;
+    const next = /^\s*,/.exec(blank.slice(i));
+    if (!next)
+      return sql.slice(i).trim();
+    i += next[0].length;
+  }
+  return void 0;
+}
+function assessSql(sql, datasourceKind, datasourceId) {
+  const compact = stripSql(sql);
+  const identity = { datasourceKind, ...datasourceId ? { datasourceId } : {} };
+  const unquoted = sqlStatementText(sql, false);
+  if (unquoted === void 0 || unquoted !== sqlStatementText(sql, true)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL quoting is ambiguous or unterminated; use doubled SQL quotes or query parameters",
+      ...identity
+    };
+  }
+  const entity = unquoted.match(/&(?:lt|gt|amp|quot|#39);/);
+  if (entity) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `SQL contains the HTML entity ${entity[0]}; write the character itself (<, >, &) in the SQL`,
+      ...identity
+    };
+  }
+  if (!compact || unquoted.includes(";")) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is empty or contains more than one statement",
+      ...identity
+    };
+  }
+  if (/^with\b/i.test(compact)) {
+    if (/\b(insert|update|delete|merge|upsert|truncate|drop|alter|create|grant|revoke|copy|call|exec|execute)\b/i.test(unquoted)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "A WITH statement that writes or runs code is not a read",
+        ...identity
+      };
+    }
+    const main = mainStatementAfterCtes(compact);
+    if (!main || !/^select\b/i.test(main)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "WITH statement: its final statement is not a SELECT that can be proven",
+        ...identity
+      };
+    }
+    const assessed = assessSql(main, datasourceKind, datasourceId);
+    return { ...assessed, simpleSourceRead: false, ...assessed.fullSourceCount ? { fullSourceCount: false } : {} };
+  }
+  if (/^(show\b|describe\b|desc\b|explain\s+(?:select\b|show\b))/i.test(compact)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      ...identity
+    };
+  }
+  if (!/^select\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL is not a single proven read statement",
+      ...identity
+    };
+  }
+  if (/\binto\s+(?:temp(?:orary)?\s+|unlogged\s+)?[`"\[]?[A-Za-z_$]/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SELECT INTO creates or replaces data and is not a read-only query",
+      ...identity
+    };
+  }
+  if (/\bfor\s+(?:no\s+key\s+update|key\s+share|update|share)\b|\block\s+in\s+share\s+mode\b/i.test(compact)) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Locking SELECT statements are not side-effect-free reads",
+      ...identity
+    };
+  }
+  const fromIndex = compact.search(/\bfrom\b/i);
+  const selectClause = compact.slice("select".length, fromIndex >= 0 ? fromIndex : compact.length).trim();
+  const countOnly = /^count\s*\([\s\S]+\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause);
+  const projectionClause = selectClause.replace(/^top\s*(?:\(\s*\d+\s*\)|\d+)\s+/i, "").trim();
+  const selectStar = !countOnly && /(?:^|,)\s*(?:[`"A-Za-z_$][\w$`"]*\.)?\*\s*(?:,|$)/.test(projectionClause);
+  const source = sqlSource(compact);
+  const fromCount = compact.match(/\bfrom\b/gi)?.length ?? 0;
+  const simpleSourceRead = !!source && fromCount === 1 && !/\b(join|union|intersect|except)\b|\bfrom\s*\(|\bfrom\s+(?:[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\.)*[`"\[]?[A-Za-z_$][\w$]*[`"\]]?\s*\(/i.test(compact);
+  const limit = compact.match(/\blimit\s+(\d+)\b/i);
+  const top = selectClause.match(/^top\s*(?:\(\s*(\d+)\s*\)|(\d+))\s+/i);
+  const fetch = compact.match(/\bfetch\s+(?:first|next)\s+(\d+)\s+rows?\s+only\b/i);
+  const maxRows = limit ? Number(limit[1]) : top ? Number(top[1] ?? top[2]) : fetch ? Number(fetch[1]) : void 0;
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(datasourceKind) && fromIndex >= 0;
+  const fullSourceCount = countOnly && /^count\s*\(\s*\*\s*\)(?:\s+(?:as\s+)?[`"A-Za-z_$][\w$`"]*)?$/i.test(selectClause) && simpleSourceRead && !/\b(where|group\s+by|having|limit|offset)\b/i.test(compact);
+  if (selectStar) {
+    return {
+      provenRead: true,
+      directSafe: false,
+      countOnly: false,
+      selectStar: true,
+      requiresCountPreflight: false,
+      source,
+      maxRows,
+      simpleSourceRead,
+      ...identity,
+      reason: "SELECT * is refused. Inspect the schema and select only the required columns."
+    };
+  }
+  if (fromIndex < 0) {
+    if (/\b[A-Za-z_$][\w$.]*\s*\(/.test(selectClause)) {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "Function-only SELECT statements cannot be proven side-effect-free",
+        ...identity
+      };
+    }
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      source,
+      maxRows,
+      ...identity
+    };
+  }
+  if (countOnly) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      fullSourceCount,
+      simpleSourceRead,
+      source,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead,
+      source,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead,
+    source,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? "Row-returning SQL has no static LIMIT." : `SQL can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function countAggregate(options) {
+  const listRows = record(options.list_rows);
+  const aggregates = record(listRows?.aggregates);
+  const groupBy = record(listRows?.group_by);
+  if (!aggregates || Object.keys(aggregates).length === 0 || groupBy && Object.keys(groupBy).length > 0)
+    return false;
+  return Object.values(aggregates).every((aggregate) => record(aggregate)?.aggFx === "count");
+}
+function fullToolJetDbCount(options) {
+  if (!countAggregate(options))
+    return false;
+  const listRows = record(options.list_rows);
+  const aggregates = record(listRows.aggregates);
+  if (Object.keys(aggregates).length !== 1)
+    return false;
+  const aggregate = record(Object.values(aggregates)[0]);
+  if (aggregate?.column !== "id")
+    return false;
+  const ignoredForScope = /* @__PURE__ */ new Set(["aggregates", "group_by", "order_filters", "limit", "offset"]);
+  return Object.entries(listRows).every(([key, value]) => {
+    if (ignoredForScope.has(key))
+      return true;
+    if (value === void 0 || value === null || value === "")
+      return true;
+    if (Array.isArray(value))
+      return value.length === 0;
+    if (record(value))
+      return Object.keys(record(value)).length === 0;
+    return false;
+  });
+}
+function guiSource(kind, options) {
+  if (kind === "tooljetdb" && typeof options.table_id === "string") {
+    return { kind: "table_id", value: options.table_id };
+  }
+  const table = typeof options.table === "string" ? options.table : void 0;
+  if (!table)
+    return void 0;
+  const schema = typeof options.schema === "string" ? `${options.schema}.` : "";
+  return { kind: "gui_table", value: `${schema}${table}`.toLowerCase() };
+}
+function assessListRows(kind, options, datasourceId) {
+  const source = guiSource(kind, options);
+  const billableRead = BILLABLE_SCAN_SQL_KINDS.has(kind);
+  const identity = { datasourceKind: kind, ...datasourceId ? { datasourceId } : {} };
+  if (kind === "tooljetdb" && countAggregate(options)) {
+    return {
+      provenRead: true,
+      directSafe: true,
+      countOnly: true,
+      selectStar: false,
+      requiresCountPreflight: false,
+      fullSourceCount: fullToolJetDbCount(options),
+      simpleSourceRead: true,
+      source,
+      maxRows: 1,
+      ...identity
+    };
+  }
+  const listRows = record(options.list_rows);
+  const maxRows = staticPositiveInteger(kind === "tooljetdb" ? listRows?.limit : options.limit);
+  const misplaced = kind === "tooljetdb" ? options.limit !== void 0 && listRows?.limit === void 0 : listRows?.limit !== void 0 && options.limit === void 0;
+  if (maxRows !== void 0 && maxRows <= LARGE_READ_ROW_THRESHOLD) {
+    return {
+      provenRead: true,
+      directSafe: !billableRead,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      requiresBillableReadConfirmation: billableRead,
+      simpleSourceRead: true,
+      source,
+      maxRows,
+      ...identity
+    };
+  }
+  return {
+    provenRead: true,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: true,
+    requiresBillableReadConfirmation: billableRead,
+    simpleSourceRead: true,
+    source,
+    maxRows,
+    ...identity,
+    reason: maxRows === void 0 ? misplaced ? kind === "tooljetdb" ? "list_rows has no statically provable row limit: ToolJet Database reads it from list_rows.limit and ignores a top-level limit." : `list_rows has no statically provable row limit: ${connectorLabel(kind)} reads it from the top-level limit and ignores list_rows.limit.` : "list_rows has no statically provable row limit." : `list_rows can return up to ${maxRows} rows, above the ${LARGE_READ_ROW_THRESHOLD}-row safety threshold.`
+  };
+}
+function assessQueryRead(query) {
+  const kind = query.kind?.toLowerCase();
+  const datasourceId = query.data_source_id;
+  const options = record(query.options);
+  if (!kind || !options) {
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "Datasource kind/options are unavailable."
+    };
+  }
+  const operation = typeof options.operation === "string" ? options.operation.toLowerCase() : void 0;
+  if (kind === "hubspot") {
+    const issue = hubspotQueryIssues(options)[0];
+    const assessment = assessOpenapi({ ...options, host: "https://api.hubapi.com" }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: "hubspot",
+      ...issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message } : { reason: assessment.reason?.replaceAll("OpenAPI", "HubSpot") }
+    };
+  }
+  if (singleSpecRef(kind)) {
+    const issue = apiEndpointQueryIssues(kind, options)[0];
+    const assessment = assessOpenapi({ ...options, host: kind }, datasourceId);
+    return {
+      ...assessment,
+      datasourceKind: kind,
+      ...issue ? { provenRead: false, directSafe: false, requiresRemoteReadConfirmation: false, reason: issue.message } : { reason: assessment.reason?.replaceAll("OpenAPI", kind) }
+    };
+  }
+  if (kind === "restapi")
+    return assessRestGet(options, datasourceId);
+  if (kind === "openapi")
+    return assessOpenapi(options, datasourceId);
+  if (kind === "servicenow")
+    return assessServiceNow(options, datasourceId);
+  if (kind === "influxdb")
+    return assessInflux(options, datasourceId);
+  if (kind === "supabase")
+    return assessSupabase(options, datasourceId);
+  if (kind === "mongodb")
+    return assessMongo(options, datasourceId);
+  if (kind === "redis")
+    return assessRedisRead(options, datasourceId);
+  if (kind === "googlesheetsv2")
+    return assessSheets(options, datasourceId);
+  if (kind === "dynamodb")
+    return assessDynamo(options, datasourceId);
+  if (kind === "couchdb")
+    return assessCouch(options, datasourceId);
+  if (kind === "tooljetdb") {
+    if (operation === "list_rows")
+      return assessListRows(kind, options, datasourceId);
+    if (operation === "sql_execution") {
+      const sql = record(options.sql_execution)?.sqlQuery;
+      return typeof sql === "string" ? assessSql(sql, kind, datasourceId) : {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: "ToolJet DB SQL text is unavailable."
+      };
+    }
+    return {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: `ToolJet DB operation ${operation ?? "<missing>"} is not a proven bounded read.`
+    };
+  }
+  if (SQL_KINDS.has(kind)) {
+    const path = sqlConnectorPath(kind, options);
+    if (path?.path === "not_read") {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: path.reason,
+        datasourceKind: kind,
+        ...datasourceId ? { datasourceId } : {}
+      };
+    }
+    if (path?.path === "gui_list_rows")
+      return assessListRows(kind, options, datasourceId);
+    if (!path && operation === "list_rows") {
+      return {
+        provenRead: false,
+        directSafe: false,
+        countOnly: false,
+        selectStar: false,
+        requiresCountPreflight: false,
+        reason: `Datasource kind ${kind} has no GUI list_rows; its operation and options do not name a proven read.`,
+        datasourceKind: kind,
+        ...datasourceId ? { datasourceId } : {}
+      };
+    }
+    const sql = path ? path.sql : ["query", "sql_query", "sql", "presto_sql_query", "soql_query"].map((field) => options[field]).find((value) => typeof value === "string" && !!value.trim());
+    return sql ? assessSql(sql, kind, datasourceId) : {
+      provenRead: false,
+      directSafe: false,
+      countOnly: false,
+      selectStar: false,
+      requiresCountPreflight: false,
+      reason: "SQL text is unavailable."
+    };
+  }
+  return {
+    provenRead: false,
+    directSafe: false,
+    countOnly: false,
+    selectStar: false,
+    requiresCountPreflight: false,
+    reason: `Datasource kind ${kind} has no proven read classifier.`
+  };
+}
+function resolvedReadRefusal(query, before, resolved) {
+  if (!Object.keys(resolved).length)
+    return void 0;
+  const kind = query.kind?.toLowerCase() ?? "";
+  const sqlLike = SQL_KINDS.has(kind) || kind === "tooljetdb";
+  if (sqlLike && resolvedBindingValues(resolved).some((value) => typeof value === "string" && value.includes(";"))) {
+    return "after its {{ }} bindings are resolved, a binding value contains a statement separator (;). Bindings in SQL must supply values, not SQL; move the statement text into the saved query.";
+  }
+  const after = assessQueryRead({ ...query, options: applyResolvedBindings(query.options, resolved) });
+  const weaker = !after.provenRead || after.selectStar || before.directSafe && !after.directSafe || !before.requiresCountPreflight && after.requiresCountPreflight || !before.requiresBillableReadConfirmation && !!after.requiresBillableReadConfirmation || !before.requiresRemoteReadConfirmation && !!after.requiresRemoteReadConfirmation;
+  if (!weaker)
+    return void 0;
+  return `after its {{ }} bindings are resolved, it is no longer the same proven bounded read (${after.reason ?? "the resolved text changes the statement"}). Bindings must supply values, not SQL or query structure; move that text into the saved query.`;
+}
+function sameReadSource(target, count) {
+  return !!target.source && !!count.source && target.simpleSourceRead === true && count.fullSourceCount === true && !!target.datasourceId && target.datasourceId === count.datasourceId && target.datasourceKind === count.datasourceKind && target.source.kind === count.source.kind && target.source.value === count.source.value;
+}
+function extractRowCount(result) {
+  if (result.status !== "ok")
+    return void 0;
+  let value = result.data;
+  if (typeof value === "number")
+    return Number.isSafeInteger(value) && value >= 0 ? value : void 0;
+  if (record(value)?.result !== void 0)
+    value = record(value).result;
+  if (Array.isArray(value)) {
+    if (value.length !== 1)
+      return void 0;
+    value = value[0];
+  }
+  const row = record(value);
+  if (!row)
+    return void 0;
+  const numeric = Object.values(row).flatMap((candidate) => {
+    const parsed = typeof candidate === "number" ? candidate : typeof candidate === "string" && /^\d+$/.test(candidate.trim()) ? Number(candidate) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? [parsed] : [];
+  });
+  return numeric.length === 1 ? numeric[0] : void 0;
+}
 export {
-  require_moment as r
+  GUI_LIST_ROWS_KEYS as G,
+  LARGE_READ_ROW_THRESHOLD as L,
+  SQL_DIALECT as S,
+  assessQueryRead as a,
+  resolveStaticBindings as b,
+  applyResolvedBindings as c,
+  connectorLabel as d,
+  sameReadSource as e,
+  extractRowCount as f,
+  emptyViewerOnlyParams as g,
+  emptyParamsNote as h,
+  declaredParameterDefaults as i,
+  resolvedReadRefusal as r,
+  sqlConnectorPath as s,
+  unresolvedNote as u
 };

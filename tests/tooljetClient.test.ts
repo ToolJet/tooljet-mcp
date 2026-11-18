@@ -637,6 +637,7 @@ describe('createClient', () => {
         version_id: 'ver1',
         // No saved library and no Shad* widget: an app from before the setting, built in ToolJet UI 1.0.
         component_library: { library: 'ui1', source: 'inferred' },
+        component_libraries: [],
         pages: [
           {
             id: 'page-home',

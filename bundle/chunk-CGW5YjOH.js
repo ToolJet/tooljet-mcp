@@ -1,17 +1,17 @@
 import { createRequire } from "node:module";
-import { s as strictEntry, k as specSchema, l as nodeSchema, o as listWorkspaceAppsTool, q as listWorkspaceFoldersTool, r as listWorkspaceUsersTool, t as manageWorkspaceUsersTool, u as inspectDatasourceSchemaTool, v as getComponentCatalogTool, w as updateComponentsTool, x as updateLayoutTool, y as datasourceMetadataTools, z as nodeCatalog, A as capabilityRequestSchema, B as getWorkflowCapabilities, D as lint, E as apply, G as deleteNode, H as validateGraph, I as editContractSchema, J as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, K as workspaceUserActionTools } from "./chunk-CB78rxY_.js";
-import { f as loadConfig, g as createClient, h as createAppTool, m as manageThemeTool, r as registerPackDefinitions, j as projectJavascriptRuntime, k as projectAppSettings, o as compactTheme, q as pageSettingProperties, v as validateTableBatch, s as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, u as workflowOperations, x as branchIdFor, y as withBranchContext } from "./chunk-CbiroNH-.js";
-import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as manageAppPermissionsTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools, Y as appPermissionActionTools } from "./chunk-CVVUvxfj.js";
-import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-QlLV3kax.js";
-import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-CXxhFbhv.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-C3XxnVrz.js";
-import { e9 as resolveRef } from "./chunk-BhoYgPP_.js";
-import { aA as external_exports, aH as inPackSet, aI as registerComponentSchemas, ax as activePackSet, aJ as newPackSet, aF as ok, aE as fail, aK as readCatalogBytes, aL as allComponentSchemas } from "./chunk-B6ozJ2M5.js";
-import { M as McpServer } from "./chunk-BkMvUc4b.js";
-import { I as pageIconSchema, A as savedComponentLibrary, C as COMPONENT_PACK_DESCRIPTION, q as componentNameSchema, D as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, M as lintRenderedGeometryBlocking, N as lintRenderedGeometryAdvisory, d as decodeComponentParent, O as FORM_SCHEMA_FIELD_TYPE_SET, Q as SAFE_GENERATED_FORM_FIELD_TYPE_SET, R as packSlotsFromManifest, T as describePackSlots } from "./chunk-DfrPsyM8.js";
-import { U as registerLibraryPacks } from "./chunk-D1B51Cza.js";
-import { g as resolveStaticBindings, u as emptyViewerOnlyParams, x as emptyParamsNote, y as unresolvedNote } from "./chunk-O6Dwgt9j.js";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-wRCgCKcA.js";
+import { s as strictEntry, l as specSchema, o as nodeSchema, q as loadInstalledPacks, r as listWorkspaceAppsTool, t as listWorkspaceFoldersTool, u as listWorkspaceUsersTool, v as manageWorkspaceUsersTool, w as inspectDatasourceSchemaTool, x as getComponentCatalogTool, y as updateComponentsTool, z as updateLayoutTool, A as datasourceMetadataTools, B as nodeCatalog, D as capabilityRequestSchema, E as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as validateGraph, K as editContractSchema, L as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, M as workspaceUserActionTools } from "./chunk-DsHerUO9.js";
+import { f as loadConfig, g as createClient, h as createAppTool, m as manageThemeTool, p as projectJavascriptRuntime, j as projectAppSettings, k as compactTheme, o as pageSettingProperties, v as validateTableBatch, q as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, r as workflowOperations, s as branchIdFor, u as withBranchContext } from "./chunk-BWjDde4n.js";
+import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as manageAppPermissionsTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools, Y as appPermissionActionTools } from "./chunk-ClWj0HG3.js";
+import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-BegdSxrn.js";
+import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-u7yx54il.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-BpLh2JWf.js";
+import { e9 as resolveRef } from "./chunk-BrqxMLVS.js";
+import { aC as external_exports, aV as inPackSet, aM as activePackSet, aW as newPackSet, aL as ok, aK as fail, aX as readCatalogBytes, aY as allComponentSchemas } from "./chunk-CS6hDtiZ.js";
+import { M as McpServer } from "./chunk-CTFbxf26.js";
+import { D as pageIconSchema, p as componentNameSchema, y as lintComponents, r as resolveParentRef, a as applyResolvedParent, b as introducedLintFindings, l as lintComponentSlots, G as lintRenderedGeometryBlocking, H as lintRenderedGeometryAdvisory, d as decodeComponentParent, I as FORM_SCHEMA_FIELD_TYPE_SET, J as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-Z4CBDLNB.js";
+import { Q as checkedLibrarySelection, P as savedComponentLibrary, R as COMPONENT_PACK_DESCRIPTION, T as verifyLibrarySelection } from "./chunk-BZWhmyFq.js";
+import { b as resolveStaticBindings, g as emptyViewerOnlyParams, h as emptyParamsNote, u as unresolvedNote } from "./chunk-BDIq0MDT.js";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-BIWKBVpC.js";
 import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { createServer } from "node:http";
@@ -186,186 +186,6 @@ var StreamableHTTPServerTransport = class {
     this._webStandardTransport.closeStandaloneSSEStream();
   }
 };
-var words = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
-var eventLabel = (s) => words(s).replace(/ (\w)/g, (_, c) => ` ${c.toLowerCase()}`);
-var VALUE_TYPE = { string: "string", number: "number", boolean: "boolean", array: "array", object: "object", enumeration: "string" };
-var stamp = (p) => {
-  if (p.default === void 0)
-    return p.type === "boolean" ? "{{false}}" : "";
-  if (p.type === "boolean")
-    return `{{${p.default}}}`;
-  if (p.type === "enumeration" || p.type === "string")
-    return String(p.default);
-  return `{{${JSON.stringify(p.default)}}}`;
-};
-var SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
-var SAMPLE_LABELS = /* @__PURE__ */ new Set(["label", "title", "resourceTitle", "subTitle", "message"]);
-var NEUTRAL_TEXT = /* @__PURE__ */ new Set(["Empty.description", "ListView.actionLabel"]);
-var sampleBlank = (component, p) => {
-  if (p.type === "boolean" || NEUTRAL_TEXT.has(`${component}.${p.name}`))
-    return void 0;
-  if (SAMPLE_TEXT.test(p.name))
-    return p.type === "array" ? "{{[]}}" : "";
-  const literal2 = typeof p.default === "string" && p.default !== "" && !p.default.trim().startsWith("{{");
-  return SAMPLE_LABELS.has(p.name) && literal2 ? "" : void 0;
-};
-function packFromLibrary(lib) {
-  const manifest = lib.manifest;
-  if (!manifest || manifest.manifestVersion !== 2 || !manifest.components)
-    return null;
-  const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, "");
-  return packFromManifest(packId, lib.name, lib.revisions?.[0]?.version ?? "", manifest, {
-    kind: "library",
-    libraryId: lib.id,
-    correlationId: lib.correlationId
-  });
-}
-function packFromBuiltin(info, manifest) {
-  if (!manifest?.components)
-    return null;
-  const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  return packFromManifest(packId, info.displayName || info.pack, info.version ?? "", manifest, {
-    kind: "builtin",
-    libraryId: "",
-    correlationId: "",
-    serverPack: info.pack
-  });
-}
-function packFromManifest(packId, libraryName, version, manifest, identity) {
-  const { serverPack, ...packIdentity } = identity;
-  if (!manifest.components)
-    return null;
-  const lib = { name: libraryName };
-  const prefix = `Lib_${packId}_`;
-  const schemas = {};
-  const definitions = {};
-  const components = {};
-  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== void 0);
-  for (const [name, entry] of Object.entries(manifest.components)) {
-    const type = `${prefix}${name}`;
-    const allProps = entry.props ?? [];
-    const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
-    const props = allProps.filter((p) => !runtimeValue(p));
-    const fits = entry.fit === true;
-    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : void 0), allProps);
-    components[name] = {
-      type,
-      props: props.map((p) => p.name),
-      events: (entry.events ?? []).map((e) => e.name),
-      styles: (entry.styles ?? []).map((s) => s.name),
-      actions: (entry.actions ?? []).map((a) => a.name),
-      fit: fits,
-      ...entry.role ? { role: entry.role } : {},
-      ...entry.roleProps ? { roleProps: entry.roleProps } : {},
-      ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
-      ...entry.roleActions ? { roleActions: entry.roleActions } : {},
-      // Preserve whether this manifest supplies slot metadata, including explicit empty lists.
-      slotsKnown: manifestListsSlots,
-      // The canvases a child may go on (lint.ts lintPackItemSlots), as the offline catalog lists them.
-      ...entry.slots?.length ? { slots: entry.slots } : {}
-    };
-    schemas[type] = {
-      type,
-      name: type,
-      // Read by the AI compiler, which plans in roles and resolves a role to this pack's component (libSwap.ts).
-      pack: {
-        id: packId,
-        component: name,
-        ...entry.role ? { role: entry.role } : {},
-        ...entry.roleProps ? { roleProps: entry.roleProps } : {},
-        ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
-        ...entry.roleActions ? { roleActions: entry.roleActions } : {},
-        ...entry.roleValues ? { roleValues: entry.roleValues } : {},
-        ...entry.labelCase ? { labelCase: entry.labelCase } : {},
-        slots: entry.slots ?? [],
-        ...slotInfo ? { slotInfo } : {},
-        ...manifest.surface ? { surface: manifest.surface } : {},
-        ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
-      },
-      description: [
-        `${entry.displayName ?? words(name)} from the ${lib.name} pack.`,
-        entry.usage,
-        describePackSlots(slotInfo),
-        fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
-      ].filter(Boolean).join(" "),
-      defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
-      properties: [
-        ...props.map((p) => ({
-          key: p.name,
-          label: p.label ?? words(p.name),
-          valueType: VALUE_TYPE[p.type] ?? "string",
-          ...p.default !== void 0 ? { default: stamp(p) } : {},
-          ...p.enumValues ? { allowedValues: p.enumValues } : {},
-          ...p.description ? { description: p.description } : {}
-        })),
-        { key: "visibility", label: "Visibility", valueType: "boolean", default: "{{true}}" },
-        // ToolJet's PackComponent saves it on every pack component; the host frees a hidden one's space with it.
-        { key: "collapseWhenHidden", label: "Collapse when hidden", valueType: "boolean", default: "{{false}}" },
-        { key: "loadingState", label: "Loading state", valueType: "boolean", default: "{{false}}" },
-        { key: "disabledState", label: "Disable", valueType: "boolean", default: "{{false}}" },
-        { key: "dynamicHeight", label: "Dynamic height", valueType: "boolean", default: fits ? "{{true}}" : "{{false}}" }
-      ],
-      styles: [
-        ...(entry.styles ?? []).map((s) => ({ key: s.name, label: s.label ?? words(s.name), valueType: VALUE_TYPE[s.type] ?? "string" })),
-        { key: "boxShadow", label: "Box shadow", valueType: "string" }
-      ],
-      events: (entry.events ?? []).map((e) => ({ id: e.name, label: e.displayName ?? eventLabel(e.name) })),
-      actions: [
-        ...(entry.actions ?? []).map((a) => ({
-          handle: a.name,
-          displayName: a.displayName ?? words(a.name),
-          ...a.params?.length ? { params: a.params.map((p) => ({ handle: p.handle, displayName: p.displayName ?? words(p.handle) })) } : {}
-        })),
-        { handle: "setVisibility", displayName: "Set visibility", params: [{ handle: "visibility", displayName: "Value", defaultValue: "{{false}}" }] },
-        { handle: "setLoading", displayName: "Set loading", params: [{ handle: "loading", displayName: "Value", defaultValue: "{{false}}" }] },
-        { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
-      ],
-      exposedVariables: [
-        // The default an agent-built component starts with: a blanked sample is advertised blank, as it is saved.
-        ...allProps.map((p) => {
-          const blank = p.default !== void 0 ? sampleBlank(name, p) : void 0;
-          const advertised = blank === void 0 ? p.default : blank === "{{[]}}" ? [] : "";
-          return { name: p.name, ...advertised !== void 0 ? { default: advertised } : {} };
-        }),
-        { name: "isVisible", default: true },
-        { name: "isLoading", default: false },
-        { name: "isDisabled", default: false },
-        ...entry.validation ? [{ name: "isValid", default: true }, { name: "isMandatory", default: false }] : []
-      ]
-    };
-    definitions[type] = {
-      properties: {
-        ...Object.fromEntries(props.map((p) => [p.name, { value: sampleBlank(name, p) ?? stamp(p) }])),
-        visibility: { value: "{{true}}" },
-        collapseWhenHidden: { value: "{{false}}" },
-        loadingState: { value: "{{false}}" },
-        disabledState: { value: "{{false}}" },
-        dynamicHeight: { value: fits ? "{{true}}" : "{{false}}" }
-      },
-      styles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } },
-      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" } }
-    };
-  }
-  return {
-    pack: { pack: serverPack ?? packId, prefix, ...packIdentity, libraryName, version, components },
-    schemas,
-    definitions
-  };
-}
-async function loadInstalledPacks(listLibraries, listBuiltin) {
-  let packs = [];
-  const builtin = listBuiltin ? await listBuiltin().catch(() => null) : null;
-  if (builtin?.length)
-    packs = builtin.map((b) => packFromBuiltin(b.info, b.manifest)).filter((p) => !!p);
-  if (!packs.length)
-    packs = (await listLibraries()).map(packFromLibrary).filter((p) => !!p);
-  if (!packs.length)
-    return [];
-  registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
-  registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));
-  registerLibraryPacks(packs.map((p) => p.pack));
-  return packs.map((p) => `${p.pack.libraryName} ${p.pack.version}`);
-}
 var storage = new AsyncLocalStorage();
 function recordHttpResponse(response) {
   const context = storage.getStore();
@@ -978,7 +798,8 @@ var SETTING_KEYS = [
   "navigation_style",
   "navigation_collapsible",
   "component_library",
-  "component_pack"
+  "component_pack",
+  "library_selection"
 ];
 function persistenceMismatches(args, snapshot2) {
   const global = snapshot2.global_settings;
@@ -996,6 +817,8 @@ function persistenceMismatches(args, snapshot2) {
   }
   if (args.app_mode !== void 0)
     expectEqual("app_mode", global.appMode, args.app_mode);
+  if (args.library_selection !== void 0)
+    expectEqual("library_selection", global.componentLibrary ?? global.component_library, args.library_selection);
   if (args.component_library !== void 0 || args.component_pack !== void 0)
     expectEqual("component_library", global.componentLibrary, savedComponentLibrary(args.component_library ?? "ui2", args.component_pack));
   if (args.theme_id !== void 0) {
@@ -1048,12 +871,16 @@ function updateAppSettingsTool(client) {
       navigation_style: external_exports.enum(["texticon", "text", "icon"]).optional(),
       navigation_collapsible: external_exports.boolean().optional(),
       component_library: external_exports.enum(["ui1", "ui2"]).optional().describe('The component library the app is built in: "ui1" ToolJet UI 1.0 (native widgets) or "ui2" ToolJet UI 2.0 (Shad* types). Change it only when the user asks to move the app to the other library.'),
+      library_selection: external_exports.string().optional().describe("Exact value from the app summary's component_libraries. Selects a shipped pack or a published workspace library."),
       component_pack: external_exports.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION)
     },
     async handler(requested) {
       try {
         const headerFollowsMenu = requested.navigation_hidden === true && (requested.hide_header === void 0 || requested.hide_logo === void 0);
         const args = requested.navigation_hidden === true ? { ...requested, hide_header: requested.hide_header ?? true, hide_logo: requested.hide_logo ?? true } : requested;
+        if (args.library_selection !== void 0) {
+          checkedLibrarySelection(args.library_selection, args.component_library, args.component_pack);
+        }
         const changed = SETTING_KEYS.filter((key) => args[key] !== void 0);
         if (!changed.length)
           throw new Error("update_app_settings requires at least one setting field.");
@@ -1083,6 +910,7 @@ function updateAppSettingsTool(client) {
           ...args.app_mode !== void 0 ? { appMode: args.app_mode } : {},
           ...theme ? { theme } : {},
           // UI 2.0 is saved as the default pack ("pack:<id>"), as create_app does, so the panel shows that pack.
+          ...args.library_selection !== void 0 ? { componentLibrary: args.library_selection } : {},
           ...args.component_library !== void 0 || args.component_pack !== void 0 ? { componentLibrary: savedComponentLibrary(args.component_library ?? "ui2", args.component_pack) } : {}
         };
         const properties = {
@@ -2375,7 +2203,7 @@ function getAppTool(client) {
     }
   };
 }
-var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment", "component_library"];
+var APP_FIELDS = ["app_id", "name", "version_id", "editor_frozen", "environment", "component_library", "component_libraries"];
 var PAGE_FIELDS = ["id", "name", "handle", "icon", "hidden", "index", "is_page_group", "page_group_id"];
 var COMPONENT_FIELDS = [
   "id",
@@ -2512,7 +2340,7 @@ function getAppSummaryTool(client) {
       destructiveHint: false,
       openWorldHint: false
     },
-    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. component_library says which library the app is built in: {library:"ui1"} is ToolJet UI 1.0 (the native widgets), {library:"ui2"} is ToolJet UI 2.0 (types starting with Shad, laid out in FlexContainers); source "saved" is the app's setting, "inferred" is read from its widgets. Build in that library unless the user asks for the other. Field roots: app(app_id/name/version_id/component_library), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
+    description: `Selective, bounded inspection of an app \u2014 use this instead of get_app. Pass version_id after create_app_version to inspect that exact version instead of the server's default editing version. By default detail="structure" returns page/component/query/event identity and layout but omits bulky component values, query options, and event payloads. Filter by page/component/query/event ids or names and select exact top-level or dotted fields, e.g. component_fields:["id","properties.data.value","styles.textSize.value"]. Use detail="full" only after narrowing the target. Each component value is the ACTUAL bound value, never the full widget schema. component_library says which library the app is built in: {library:"ui1"} is ToolJet UI 1.0 (the native widgets), {library:"ui2"} is ToolJet UI 2.0 (types starting with Shad, laid out in FlexContainers); source "saved" is the app's setting, "inferred" is read from its widgets. Build in that library unless the user asks for the other. component_libraries lists the active workspace picker choices (value, name, pack). Field roots: app(app_id/name/version_id/component_library/component_libraries), page(id/name/handle/icon/hidden/index/is_page_group/page_group_id), component(id/name/type/layouts/properties/styles/validation/others/parent), query(id/name/kind/data_source_id/options), and event(id/name/sourceId/target/event). sections can omit pages/queries/events; include_components:false returns page metadata only.`,
     inputSchema: {
       app_id: external_exports.string(),
       version_id: external_exports.string().min(1).optional(),
@@ -2640,7 +2468,9 @@ function validateAppTool(client) {
     description: "Validate persisted app structure and saved query contracts WITHOUT executing queries or opening a browser. Pass version_id after create_app_version to validate that exact version. Returns an explicit checked/not_checked scope plus { ok, errors, warnings }. Catches: dangling event references (event on a deleted component/query, run-query pointing at a missing query), ambiguous duplicate component/query names, bindings to non-existent queries/components ({{queries.X}} / {{components.X}} with no such X), and per-component render traps (Table bound without rawJson, malformed DropdownV2 options, invalid static Chart JSON, Chart left with its clipping default title, bad headerCasing). Run it before you call the app done (then still do the one browser pass). `errors` are broken references or invalid persisted contracts you should fix; `warnings` are likely render problems worth checking. A clean result does NOT prove external APIs, mutations, event delivery, or visual rendering work; run explicitly selected safe reads and browser-test primary flows.",
     inputSchema: {
       app_id: external_exports.string(),
-      version_id: external_exports.string().min(1).optional()
+      version_id: external_exports.string().min(1).optional(),
+      expected_library_selection: external_exports.string().optional().describe("Verify that the target version and newly authored widgets use this component library."),
+      existing_component_ids: external_exports.array(external_exports.string()).optional().describe("Required with expected_library_selection. Pass the component IDs present before the build, or [] for an initially empty app.")
     },
     async handler(args) {
       try {
@@ -2663,6 +2493,14 @@ function validateAppTool(client) {
           } catch {
             validation.not_checked.push("library pins (the version settings could not be read)");
           }
+        }
+        if (args.expected_library_selection) {
+          if (!args.existing_component_ids)
+            throw new Error("Pass existing_component_ids from before the build, or [] if the app started empty.");
+          const errors = verifyLibrarySelection(summary.component_library, summary.pages, args.expected_library_selection, args.existing_component_ids);
+          validation.errors.push(...errors);
+          validation.checked.push("selected library and newly authored component types");
+          return ok({ ...validation, ok: validation.errors.length === 0, component_library_ok: errors.length === 0 });
         }
         validation.ok = validation.errors.length === 0;
         return ok(validation);

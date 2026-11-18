@@ -1,13 +1,16 @@
 import { createRequire } from "node:module";
-import { e9 as resolveRef } from "./chunk-BhoYgPP_.js";
-import { aA as external_exports, aE as fail, aF as ok, ay as getComponentSchema, aG as exposeActions, aC as getCatalog, aB as internalComponentTypeNote, aD as getLegacyComponentReplacement } from "./chunk-B6ozJ2M5.js";
-import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, b as resolvePackSlot, e as encodeComponentParent, f as introducedLintFindings, l as lintComponentSlots, g as lintComponentSpec, h as lintUnusableTextGeometry, j as lintNestedContainerWidths, k as lintStandardSingleLineInputHeight, m as lintTextGeometry, n as lintRenderedGeometry, o as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, p as nearestCatalogKey, q as componentNameSchema, s as componentNameError, t as slotFindingKey, u as lintKanbanInteractions, v as lintShadKanbanCards, w as lintShadScheduleScale } from "./chunk-DfrPsyM8.js";
+import { e9 as resolveRef } from "./chunk-BrqxMLVS.js";
+import { aC as external_exports, aK as fail, aL as ok, aM as activePackSet, aN as registerComponentSchemas, aO as registerLibraryPacks, ax as getComponentSchema, aP as exposeActions, aG as getCatalog, aE as internalComponentTypeNote, aH as getLegacyComponentReplacement } from "./chunk-CS6hDtiZ.js";
+import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, e as encodeComponentParent, b as introducedLintFindings, l as lintComponentSlots, f as lintComponentSpec, g as lintUnusableTextGeometry, h as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, n as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, o as nearestCatalogKey, p as componentNameSchema, q as componentNameError, s as slotFindingKey, t as lintKanbanInteractions, u as lintShadKanbanCards, v as lintShadScheduleScale } from "./chunk-Z4CBDLNB.js";
+import { y as resolvePackSlot, K as packSlotsFromManifest, L as describePackSlots, A as retiredUi2Name, M as suggestedHtmlHeight, N as componentLibraryChoices } from "./chunk-BZWhmyFq.js";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
-import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-O6Dwgt9j.js";
+import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-CgSLCcEW.js";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-wRCgCKcA.js";
-import { A as retiredUi2Name, N as suggestedHtmlHeight } from "./chunk-D1B51Cza.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-BIWKBVpC.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {
@@ -331,6 +334,276 @@ function updateLayoutTool(client) {
       }
     }
   };
+}
+createRequire(import.meta.url);
+var cached;
+var SAMPLE_BLANKS = {
+  ShadHero: { eyebrow: "", subtitle: "", meta: "{{[]}}", actionLabel: "" },
+  ShadCardGrid: { badgeField: "", descriptionField: "", metaFields: "" },
+  ShadRecordList: { metaFields: "", valueField: "", valueFormat: "auto" },
+  // The sample's budget fields (spent, budget, note, status) are not a build's data: the config's own names stand.
+  ShadProgressList: {
+    labelField: "label",
+    valueField: "value",
+    targetField: "target",
+    captionField: "",
+    statusField: "",
+    valueFormat: "auto"
+  },
+  ShadSchedule: { resourceField: "resource", resourceTitle: "" },
+  // The sample's delivery stops (customer, address, eta, driver) are not a build's data: no rows, generic fields.
+  ShadMap: { data: "{{[]}}", titleField: "name", subtitleField: "", popupFields: "" },
+  // 'auto' reads money from a figure's label; the 'currency' default showed counts of rooms as dollars.
+  ShadSummaryStrip: { valueFormat: "auto" },
+  ShadTags: { tags: "{{[]}}", tagColors: "{{{}}}" },
+  ShadAvatar: { names: "" },
+  ShadLink: { linkTarget: "" },
+  ShadCombobox: { searchPlaceholder: "Search..." },
+  ShadMultiselect: { searchPlaceholder: "Search..." },
+  ShadTagsInput: { suggestions: "{{[]}}" },
+  // The sample greeting talks about orders, invoices and deliveries; a build's chat starts from its own history.
+  ShadChat: { initialChat: "{{[]}}" },
+  // The sample's 'set up your workspace' line is not a build's; completeTitle alone reads fine.
+  ShadQuestionnaire: { completeText: "" }
+};
+var PACK_SAMPLE_TEXT = ["label", "title", "resourceTitle", "subTitle", "message"];
+function registerPackDefinitions(extra) {
+  packDefaultDefinition("");
+  const defs = extra;
+  for (const def of Object.values(defs)) {
+    for (const key of PACK_SAMPLE_TEXT) {
+      const entry = def?.properties?.[key];
+      if (entry && typeof entry.value === "string" && entry.value && !entry.value.trim().startsWith("{{"))
+        def.properties[key] = { ...entry, value: "" };
+    }
+  }
+  Object.assign(activePackSet().definitions, defs);
+}
+function packDefaultDefinition(type) {
+  if (!cached) {
+    try {
+      const path = resolve(dirname(fileURLToPath(import.meta.url)), "../data/pack-default-definitions.json");
+      cached = JSON.parse(readFileSync(path, "utf8")).definitions ?? {};
+      for (const [type2, blanks] of Object.entries(SAMPLE_BLANKS)) {
+        const def = cached[type2];
+        if (!def?.properties)
+          continue;
+        for (const [key, value] of Object.entries(blanks)) {
+          if (key in def.properties)
+            def.properties[key] = { ...def.properties[key], value };
+        }
+      }
+    } catch {
+      cached = {};
+    }
+  }
+  return activePackSet().definitions[type] ?? cached[type];
+}
+createRequire(import.meta.url);
+var words = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+var eventLabel = (s) => words(s).replace(/ (\w)/g, (_, c) => ` ${c.toLowerCase()}`);
+var VALUE_TYPE = { string: "string", number: "number", boolean: "boolean", array: "array", object: "object", enumeration: "string" };
+var stamp = (p) => {
+  if (p.default === void 0)
+    return p.type === "boolean" ? "{{false}}" : "";
+  if (p.type === "boolean")
+    return `{{${p.default}}}`;
+  if (p.type === "enumeration" || p.type === "string")
+    return String(p.default);
+  return `{{${JSON.stringify(p.default)}}}`;
+};
+var SAMPLE_TEXT = /^(eyebrow|subtitle|description|meta|actionLabel|secondaryActionLabel|asideValue|asideLabel|changeLabel|change)$/;
+var SAMPLE_LABELS = /* @__PURE__ */ new Set(["label", "title", "resourceTitle", "subTitle", "message"]);
+var NEUTRAL_TEXT = /* @__PURE__ */ new Set(["Empty.description", "ListView.actionLabel"]);
+var sampleBlank = (component, p) => {
+  if (p.type === "boolean" || NEUTRAL_TEXT.has(`${component}.${p.name}`))
+    return void 0;
+  if (SAMPLE_TEXT.test(p.name))
+    return p.type === "array" ? "{{[]}}" : "";
+  const literal = typeof p.default === "string" && p.default !== "" && !p.default.trim().startsWith("{{");
+  return SAMPLE_LABELS.has(p.name) && literal ? "" : void 0;
+};
+function legacyPackId(lib) {
+  const name2 = lib.manifest?.manifestVersion === 2 ? lib.manifest.pack || lib.name : "";
+  return typeof name2 === "string" ? name2.toLowerCase().replace(/[^a-z0-9]+/g, "") : "";
+}
+function packFromLibrary(lib, occupied = /* @__PURE__ */ new Set()) {
+  const manifest = lib.manifest;
+  if (lib.codeMode || !lib.revisions?.[0]?.version || !manifest?.components || !Object.keys(manifest.components).length)
+    return null;
+  if (manifest.manifestVersion !== void 0 && manifest.manifestVersion !== 2)
+    return null;
+  const legacy = legacyPackId(lib);
+  const packId = legacy && !occupied.has(legacy) ? legacy : `lib${lib.id.replace(/-/g, "")}`;
+  return packFromManifest(packId, lib.name, lib.revisions[0].version, manifest, {
+    kind: "library",
+    libraryId: lib.id,
+    correlationId: lib.correlationId
+  });
+}
+function packFromBuiltin(info, manifest) {
+  if (!manifest?.components)
+    return null;
+  const packId = info.pack.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return packFromManifest(packId, info.displayName || info.pack, info.version ?? "", manifest, {
+    kind: "builtin",
+    libraryId: "",
+    correlationId: "",
+    serverPack: info.pack
+  });
+}
+function packFromManifest(packId, libraryName, version, manifest, identity) {
+  const { serverPack, ...packIdentity } = identity;
+  if (!manifest.components)
+    return null;
+  const lib = { name: libraryName };
+  const prefix = `Lib_${packId}_`;
+  const schemas = {};
+  const definitions = {};
+  const components = {};
+  const manifestListsSlots = Object.values(manifest.components).some((entry) => entry.slots !== void 0);
+  for (const [name2, entry] of Object.entries(manifest.components)) {
+    const type = `${prefix}${name2}`;
+    const allProps = entry.props ?? [];
+    const runtimeValue = (p) => p.name === "value" && p.inspector === "hidden" && allProps.some((q) => q.name === "defaultValue");
+    const props = allProps.filter((p) => !runtimeValue(p));
+    const fits = entry.fit === true;
+    const slotInfo = packSlotsFromManifest(entry.slots ?? (manifestListsSlots ? [] : void 0), allProps);
+    components[name2] = {
+      type,
+      props: props.map((p) => p.name),
+      events: (entry.events ?? []).map((e) => e.name),
+      styles: (entry.styles ?? []).map((s) => s.name),
+      actions: (entry.actions ?? []).map((a) => a.name),
+      fit: fits,
+      ...entry.role ? { role: entry.role } : {},
+      ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+      ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+      ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+      // Preserve whether this manifest supplies slot metadata, including explicit empty lists.
+      slotsKnown: manifestListsSlots,
+      // The canvases a child may go on (lint.ts lintPackItemSlots), as the offline catalog lists them.
+      ...entry.slots?.length ? { slots: entry.slots } : {}
+    };
+    schemas[type] = {
+      type,
+      name: type,
+      // Read by the AI compiler, which plans in roles and resolves a role to this pack's component (libSwap.ts).
+      pack: {
+        id: packId,
+        component: name2,
+        ...entry.role ? { role: entry.role } : {},
+        ...entry.roleProps ? { roleProps: entry.roleProps } : {},
+        ...entry.roleEvents ? { roleEvents: entry.roleEvents } : {},
+        ...entry.roleActions ? { roleActions: entry.roleActions } : {},
+        ...entry.roleValues ? { roleValues: entry.roleValues } : {},
+        ...entry.labelCase ? { labelCase: entry.labelCase } : {},
+        slots: entry.slots ?? [],
+        ...slotInfo ? { slotInfo } : {},
+        ...manifest.surface ? { surface: manifest.surface } : {},
+        ...manifest.themeMode ? { themeMode: manifest.themeMode } : {}
+      },
+      description: [
+        `${entry.displayName ?? words(name2)} from the ${lib.name} pack.`,
+        entry.usage,
+        describePackSlots(slotInfo),
+        fits ? "Sizes to its content in the app (Dynamic height on)." : "Drawn at the height you give it."
+      ].filter(Boolean).join(" "),
+      defaultSize: { width: entry.defaultWidth ?? 6, height: (entry.defaultHeight ?? 4) * 10 },
+      properties: [
+        ...props.map((p) => ({
+          key: p.name,
+          label: p.label ?? words(p.name),
+          valueType: VALUE_TYPE[p.type] ?? "string",
+          ...p.default !== void 0 ? { default: stamp(p) } : {},
+          ...p.enumValues ? { allowedValues: p.enumValues } : {},
+          ...p.description ? { description: p.description } : {}
+        })),
+        { key: "visibility", label: "Visibility", valueType: "boolean", default: "{{true}}" },
+        // ToolJet's PackComponent saves it on every pack component; the host frees a hidden one's space with it.
+        { key: "collapseWhenHidden", label: "Collapse when hidden", valueType: "boolean", default: "{{false}}" },
+        { key: "loadingState", label: "Loading state", valueType: "boolean", default: "{{false}}" },
+        { key: "disabledState", label: "Disable", valueType: "boolean", default: "{{false}}" },
+        { key: "dynamicHeight", label: "Dynamic height", valueType: "boolean", default: fits ? "{{true}}" : "{{false}}" }
+      ],
+      styles: [
+        ...(entry.styles ?? []).map((s) => ({ key: s.name, label: s.label ?? words(s.name), valueType: VALUE_TYPE[s.type] ?? "string" })),
+        { key: "boxShadow", label: "Box shadow", valueType: "string" }
+      ],
+      events: (entry.events ?? []).map((e) => ({ id: e.name, label: e.displayName ?? eventLabel(e.name) })),
+      actions: [
+        ...(entry.actions ?? []).map((a) => ({
+          handle: a.name,
+          displayName: a.displayName ?? words(a.name),
+          ...a.params?.length ? { params: a.params.map((p) => ({ handle: p.handle, displayName: p.displayName ?? words(p.handle) })) } : {}
+        })),
+        { handle: "setVisibility", displayName: "Set visibility", params: [{ handle: "visibility", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setLoading", displayName: "Set loading", params: [{ handle: "loading", displayName: "Value", defaultValue: "{{false}}" }] },
+        { handle: "setDisable", displayName: "Set disable", params: [{ handle: "disable", displayName: "Value", defaultValue: "{{false}}" }] }
+      ],
+      exposedVariables: [
+        // The default an agent-built component starts with: a blanked sample is advertised blank, as it is saved.
+        ...allProps.map((p) => {
+          const blank = p.default !== void 0 ? sampleBlank(name2, p) : void 0;
+          const advertised = blank === void 0 ? p.default : blank === "{{[]}}" ? [] : "";
+          return { name: p.name, ...advertised !== void 0 ? { default: advertised } : {} };
+        }),
+        { name: "isVisible", default: true },
+        { name: "isLoading", default: false },
+        { name: "isDisabled", default: false },
+        ...entry.validation ? [{ name: "isValid", default: true }, { name: "isMandatory", default: false }] : []
+      ]
+    };
+    definitions[type] = {
+      properties: {
+        ...Object.fromEntries(props.map((p) => [p.name, { value: sampleBlank(name2, p) ?? stamp(p) }])),
+        visibility: { value: "{{true}}" },
+        collapseWhenHidden: { value: "{{false}}" },
+        loadingState: { value: "{{false}}" },
+        disabledState: { value: "{{false}}" },
+        dynamicHeight: { value: fits ? "{{true}}" : "{{false}}" }
+      },
+      styles: { boxShadow: { value: "0px 0px 0px 0px #00000040" } },
+      others: { showOnDesktop: { value: "{{true}}" }, showOnMobile: { value: "{{false}}" } }
+    };
+  }
+  return {
+    pack: { pack: serverPack ?? packId, prefix, ...packIdentity, libraryName, version, components },
+    schemas,
+    definitions
+  };
+}
+async function loadInstalledPacks(listLibraries, listBuiltin) {
+  const builtin = await listBuiltin?.().catch(() => null);
+  const libraries = await listLibraries().catch(() => []);
+  const packs = (builtin ?? []).map((b) => packFromBuiltin(b.info, b.manifest)).filter((p) => !!p);
+  const occupied = new Set(packs.map((p) => p.pack.prefix.slice(4, -1)));
+  const nameCounts = /* @__PURE__ */ new Map();
+  for (const lib of libraries) {
+    occupied.add(`lib${lib.id.replace(/-/g, "")}`);
+    if (lib.codeMode || !lib.revisions?.[0]?.version)
+      continue;
+    const name2 = legacyPackId(lib);
+    nameCounts.set(name2, (nameCounts.get(name2) ?? 0) + 1);
+  }
+  for (const [name2, count] of nameCounts)
+    if (count > 1)
+      occupied.add(name2);
+  for (const lib of libraries) {
+    try {
+      const built = packFromLibrary(lib, occupied);
+      if (built)
+        packs.push(built);
+    } catch {
+      console.error(`tooljet-mcp: skipped invalid component manifest for library ${lib.id}`);
+    }
+  }
+  if (!packs.length)
+    return [];
+  registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
+  registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));
+  registerLibraryPacks(packs.map((p) => p.pack));
+  return packs.map((p) => `${p.pack.libraryName} ${p.pack.version}`);
 }
 createRequire(import.meta.url);
 var workflowName = external_exports.string().min(1).refine((value) => value.trim().length > 0, "Name must not be blank.");
@@ -723,7 +996,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
       graph.nodes.push(node);
     node_ids[input.ref] = id;
   }
-  const resolve = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
+  const resolve2 = (ref2) => node_ids[ref2] ?? (graph.nodes.some((n) => n.id === ref2) ? ref2 : void 0);
   const editedEdges = /* @__PURE__ */ new Set();
   for (const input of spec.edges) {
     const id = input.existing_id ?? ids?.edge_ids[input.ref] ?? randomUUID();
@@ -733,7 +1006,7 @@ function compileGraph(current, spec, ids, datasourceKinds = /* @__PURE__ */ new 
     const old = graph.edges.find((e) => e.id === id);
     if (input.existing_id && !old)
       throw new Error(`Unknown existing edge: ${id}`);
-    const source = resolve(input.from), target = resolve(input.to);
+    const source = resolve2(input.from), target = resolve2(input.to);
     if (!source || !target)
       throw new Error(`Unknown endpoint in edge ${input.ref}. Use a supplied ref or existing node ID.`);
     const sourceNode = graph.nodes.find((node) => node.id === source);
@@ -2202,18 +2475,18 @@ function normalizeComponentSpec(component, options = {}) {
         }
         if (shadcnLook && column && typeof column === "object" && !Array.isArray(column)) {
           const entry = column;
-          const words = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
+          const words2 = `${String(entry.key ?? "")} ${String(entry.name ?? "")}`.replace(/[_-]+/g, " ");
           const next = { ...entry };
-          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words) && !UNIT_WORDS.test(words)) {
+          if (entry.columnType === "number" && entry.decimalPlaces === void 0 && MONEY_WORDS.test(words2) && !UNIT_WORDS.test(words2)) {
             next.decimalPlaces = 2;
           }
-          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words)) {
+          if (["string", void 0].includes(entry.columnType) && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable) && STATE_WORDS.test(words2)) {
             next.displayAsChip = true;
           }
           const size = Number(entry.columnSize);
           const label = String(entry.name ?? entry.key ?? "");
           if (Number.isFinite(size) && size > 0 && label) {
-            const email = /\be ?mail\b/i.test(words) ? 240 : 0;
+            const email = /\be ?mail\b/i.test(words2) ? 240 : 0;
             const chip = next.displayAsChip === true || entry.displayAsChip === true ? 140 : 0;
             const needed = Math.max(email, chip, Math.ceil(label.length * 7.5) + 32 + (isTruthy(entry.isEditable) ? 18 : 0));
             if (size < needed)
@@ -2260,8 +2533,8 @@ function normalizeComponentSpec(component, options = {}) {
           if (!c || typeof c !== "object" || Array.isArray(c))
             return false;
           const entry2 = c;
-          const words = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
-          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words);
+          const words2 = `${String(entry2.key ?? "")} ${String(entry2.name ?? "")}`.replace(/[_-]+/g, " ");
+          return entry2.columnVisibility !== false && ["string", void 0].includes(entry2.columnType) && PERSON_WORDS.test(words2) && !/\b(e ?mail|id|phone|count|type|notes?)\b/i.test(words2);
         });
         const entry = index >= 0 ? repairedColumns[index] : void 0;
         if (entry && entry.displayAvatar === void 0 && entry.displayAsChip === void 0 && !isTruthy(entry.isEditable)) {
@@ -2788,8 +3061,8 @@ function packSuggestions(requestedType) {
   return [...new Set(PACK_CONCEPTS.filter(([pattern]) => pattern.test(rest)).flatMap(([, types]) => types))];
 }
 function nearbyTypes(requestedType) {
-  const words = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
-  return getCatalog().map((entry) => entry.type).filter((type) => words.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
+  const words2 = requestedType.split(/(?=[A-Z])|[\s_-]+/).map((word) => word.toLowerCase()).filter((word) => word.length >= 4);
+  return getCatalog().map((entry) => entry.type).filter((type) => words2.some((word) => type.toLowerCase().includes(word))).slice(0, 6);
 }
 function selectEntries(entries, keys, detail) {
   const selected = keys?.length ? entries.filter((entry) => keys.includes(entry.key)) : entries;
@@ -2864,6 +3137,7 @@ function getComponentCatalogTool(client) {
     },
     description: 'Discover ToolJet components. With no type(s), returns the lightweight palette. Use type for one component or types for a batch needed in the current page/phase. Typed reads default to detail:"compact" and the overview/properties/events/actions sections; compact property/style lists omit labels and defaults. Use detail:"full" or exact property_keys/style_keys only when those values are needed. Request renderingHints/authoringHints for layout-sensitive or nested components. Use requests when different types need different sections/keys in one call; top-level detail/sections/keys apply as defaults to every requested type, and the type/types/requests selectors may be combined. sections selects only overview, properties, styles, events, actions, exposedVariables, defaultChildren, renderingHints, and/or authoringHints; property_keys/style_keys narrow those arrays further. A batch returns {components,unknown_types}. GridView is a lookup alias for Listview mode:"grid"; component writes must still use type:"Listview". authoringHints covers nested contracts such as ModalV2 native slots, Table row-action Button columns, and Form JSON-schema field types. Fetch complex/unfamiliar contracts once and reuse them; never guess property/event/action ids.',
     inputSchema: {
+      list_libraries: external_exports.boolean().optional().describe("List available shipped packs and published workspace libraries with their exact picker values and catalog prefixes."),
       type: external_exports.string().optional(),
       types: external_exports.array(external_exports.string()).min(1).max(25).optional(),
       requests: external_exports.array(external_exports.object({
@@ -2880,6 +3154,8 @@ function getComponentCatalogTool(client) {
     },
     async handler(args) {
       try {
+        if (args?.list_libraries)
+          return ok({ component_libraries: componentLibraryChoices() });
         const singleType = args?.type;
         const typesList = args?.types ?? [];
         const batch = args?.requests ?? [];
@@ -2976,41 +3252,43 @@ function getComponentCatalogTool(client) {
   };
 }
 export {
-  capabilityRequestSchema as A,
-  getWorkflowCapabilities as B,
+  datasourceMetadataTools as A,
+  nodeCatalog as B,
   COMPONENT_FX_GUIDANCE as C,
-  lint as D,
-  apply as E,
+  capabilityRequestSchema as D,
+  getWorkflowCapabilities as E,
   FLEX_MIN_WIDTH_PX_DESCRIPTION as F,
-  deleteNode as G,
-  validateGraph as H,
-  editContractSchema as I,
-  generateEditContract as J,
-  workspaceUserActionTools as K,
+  lint as G,
+  apply as H,
+  deleteNode as I,
+  validateGraph as J,
+  editContractSchema as K,
+  generateEditContract as L,
+  workspaceUserActionTools as M,
   batchChildOrders as a,
   bodyParentId as b,
   childOrderProperty as c,
   appendedChildOrders as d,
   definition as e,
-  FLEX_GROW_DESCRIPTION as f,
-  FLEX_WIDTH_PX_DESCRIPTION as g,
+  plannedCurrency as f,
+  FLEX_GROW_DESCRIPTION as g,
   hasNonEmptyDefinition as h,
   isFlexContainerType as i,
-  FLEX_FILL_WIDTH_DESCRIPTION as j,
-  specSchema as k,
-  nodeSchema as l,
+  FLEX_WIDTH_PX_DESCRIPTION as j,
+  FLEX_FILL_WIDTH_DESCRIPTION as k,
+  specSchema as l,
   mapKeyRefusal as m,
   normalizeComponentSpec as n,
-  listWorkspaceAppsTool as o,
-  plannedCurrency as p,
-  listWorkspaceFoldersTool as q,
-  listWorkspaceUsersTool as r,
+  nodeSchema as o,
+  packDefaultDefinition as p,
+  loadInstalledPacks as q,
+  listWorkspaceAppsTool as r,
   strictEntry as s,
-  manageWorkspaceUsersTool as t,
-  inspectDatasourceSchemaTool as u,
-  getComponentCatalogTool as v,
-  updateComponentsTool as w,
-  updateLayoutTool as x,
-  datasourceMetadataTools as y,
-  nodeCatalog as z
+  listWorkspaceFoldersTool as t,
+  listWorkspaceUsersTool as u,
+  manageWorkspaceUsersTool as v,
+  inspectDatasourceSchemaTool as w,
+  getComponentCatalogTool as x,
+  updateComponentsTool as y,
+  updateLayoutTool as z
 };

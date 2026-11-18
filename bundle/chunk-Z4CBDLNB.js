@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { p as packSlotOnOwnId, s as surfaceAroundResolver, m as lintSelectedRowProjections, n as emptyLibraryHostError, o as lintOversizedWidths, q as lintHtmlContentHeight, t as lintHtmlRootSurface, u as lintUnguardedComponentRefs, v as lintEmbeddedBindingSyntax, w as lintChartDataShape, x as lintUnguardedSelectionText, y as isLibraryPackType, z as serverLibraryPacks, A as retiredUi2Name, B as lintTextFormat, C as lintTableColumnsShape, D as BARE_QUERY_DATA_BINDING, E as lintComponentStateBindings, F as lintEmptyDateWrites, G as lintUntriggeredDataQueries, H as lintAutomaticWrites, I as packRowSlotNames, J as libraryPacksAll, K as parseHtml, L as stripHtmlBindings, M as packSlotNames } from "./chunk-D1B51Cza.js";
-import { aA as external_exports, aB as internalComponentTypeNote, ay as getComponentSchema, aC as getCatalog, aD as getLegacyComponentReplacement } from "./chunk-B6ozJ2M5.js";
-import { r as require_lib, l as lintBindingNames, b as bindingSpans } from "./chunk-O6Dwgt9j.js";
-import { p as parseExpression, a as parse } from "./chunk-Be6oakQ4.js";
-import { e8 as __toESM } from "./chunk-BhoYgPP_.js";
+import { m as require_lib, p as packSlotsOfType, s as surfaceAroundResolver, n as lintSelectedRowProjections, o as lintOversizedWidths, q as lintHtmlContentHeight, t as lintHtmlRootSurface, u as lintUnguardedComponentRefs, v as lintEmbeddedBindingSyntax, w as lintChartDataShape, x as lintUnguardedSelectionText, y as resolvePackSlot, z as defaultPack, A as retiredUi2Name, B as lintTextFormat, C as lintTableColumnsShape, D as BARE_QUERY_DATA_BINDING, E as lintComponentStateBindings, F as lintEmptyDateWrites, G as lintUntriggeredDataQueries, H as lintAutomaticWrites, I as parseHtml, J as stripHtmlBindings } from "./chunk-BZWhmyFq.js";
+import { aC as external_exports, aD as packSlotOnOwnId, aE as internalComponentTypeNote, aF as emptyLibraryHostError, ay as isLibraryPackType, ax as getComponentSchema, aG as getCatalog, az as serverLibraryPacks, aH as getLegacyComponentReplacement, aI as packRowSlotNames, aJ as packSlotNames } from "./chunk-CS6hDtiZ.js";
+import { l as lintBindingNames, b as bindingSpans } from "./chunk-CgSLCcEW.js";
+import { p as parseExpression, a as parse } from "./chunk-BNro-MpC.js";
+import { e7 as __toESM } from "./chunk-BrqxMLVS.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var MAX_SLOT_ITEMS = 50;
@@ -118,81 +118,6 @@ function packValueTypeError(type, key, valueType, value2) {
   if (valueType === "boolean" ? usableBoolean(value2) : usableNumber(value2))
     return null;
   return valueType === "boolean" ? `"${key}" takes a boolean, and ${JSON.stringify(value2)} is not one, so the component reads it as false. Use true, false or a {{binding}}.` : `"${key}" takes a number, and ${JSON.stringify(value2)} is not one, so the component draws it as unset. Use a number or a {{binding}}.`;
-}
-var defaultPack = () => {
-  const raw = process.env.MCP_AGENT_PACK;
-  return (raw === void 0 ? "shadcn" : raw).trim().toLowerCase() || void 0;
-};
-var savedComponentLibrary = (library, pack) => {
-  const chosen = pack?.trim().toLowerCase() || defaultPack();
-  return library === "ui2" && chosen ? `pack:${chosen}` : library;
-};
-var COMPONENT_PACK_DESCRIPTION = `The component pack a UI 2.0 app is built with, saved on the app (the components panel lists it): "shadcn" (Rocket 2.0, ToolJet's own look), "antd" (Ant Design) or "mui" (Material UI). Pass it when the user names a design system; then build with that pack's Lib_<pack>_* widgets. Omitted, the default pack.`;
-var COMPONENT_LIBRARY_NAMES = {
-  ui1: "ToolJet UI 1.0",
-  ui2: "ToolJet UI 2.0"
-};
-var isUi2Type = (type) => typeof type === "string" && /^Shad[A-Z]/.test(type);
-var isPackType = (type) => typeof type === "string" && /^Lib_[a-z0-9]+_/i.test(type);
-function resolveComponentLibrary(globalSettings, componentTypes) {
-  const settings = globalSettings;
-  const saved = settings?.componentLibrary ?? settings?.component_library;
-  if (saved === "ui1" || saved === "ui2")
-    return { library: saved, source: "saved" };
-  if (typeof saved === "string" && saved.startsWith("pack:") && saved.length > 5)
-    return { library: "ui2", source: "saved", pack: saved.slice(5) };
-  if (typeof saved === "string" && saved.startsWith("lib:"))
-    return { library: "ui1", source: "saved" };
-  for (const type of componentTypes)
-    if (isUi2Type(type) || isPackType(type))
-      return { library: "ui2", source: "inferred" };
-  return { library: "ui1", source: "inferred" };
-}
-var styleValue = (styles, key) => {
-  const entry = styles?.[key];
-  return entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-};
-function nativeFitsUi2(component) {
-  if (component.type === "FlexContainer" || component.type === "Map")
-    return true;
-  return component.type === "Table" && styleValue(component.styles, "tableLook") !== "default";
-}
-function buildPack(library) {
-  if (library.pack)
-    return library.pack;
-  return serverLibraryPacks().length ? defaultPack() : void 0;
-}
-function packFix(pack) {
-  const components = libraryPacksAll().find((p) => p.pack === pack)?.components ?? {};
-  const first = (...names) => names.find((name) => components[name]);
-  const dialog = first("Dialog", "Modal");
-  const sheet = first("Drawer", "Sheet");
-  return `Build with the app's component pack instead: types whose names start with Lib_${pack}_ (get_component_catalog lists them), laid out in FlexContainers; ` + (dialog ? `Lib_${pack}_${dialog} for dialogs; ` : "") + (sheet ? `Lib_${pack}_${sheet} for side sheets; ` : "") + `for tables ToolJet's Table (styles.tableLook "shadcn").`;
-}
-function componentLibraryWarnings(library, pages, request) {
-  if (request?.trim())
-    return [];
-  const off = /* @__PURE__ */ new Map();
-  for (const page of pages ?? []) {
-    for (const component of page.components ?? []) {
-      const type = String(component.type ?? "");
-      const ui2Side = isUi2Type(type) || isPackType(type);
-      const mismatch = library.library === "ui1" ? ui2Side : !ui2Side && !nativeFitsUi2(component);
-      if (!mismatch)
-        continue;
-      off.set(type, [...off.get(type) ?? [], component.name ?? type]);
-    }
-  }
-  if (!off.size)
-    return [];
-  const listed = [...off].map(([type, names]) => `${type} (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})`).join("; ");
-  const how = library.source === "saved" ? "its saved library" : library.source === "inferred" ? "the library its widgets imply" : "new apps are; pass app_id to check the plan against an existing app";
-  const appName = COMPONENT_LIBRARY_NAMES[library.library];
-  const pack = library.library === "ui2" ? buildPack(library) : void 0;
-  const fix = library.library === "ui1" ? "Build with the native ToolJet types instead (Table, Chart, TextInput, DropdownV2, ModalV2, Container, ...)." : pack ? packFix(pack) : `Build with the UI 2.0 types instead: types whose names start with Shad, laid out in FlexContainers; ShadDialog for dialogs and side sheets; for tables ToolJet's Table (styles.tableLook "shadcn").`;
-  return [
-    `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} If the user asked for the other library in this request, keep the plan and put their words in component_library_request.`
-  ];
 }
 function isNode(value2) {
   return !!value2 && typeof value2 === "object" && typeof value2.type === "string";
@@ -809,159 +734,6 @@ function dropdownDefaultVisibilityWarning(value2, label) {
   }
   return missing ? [`DropdownV2 "${label}": an option declares a default but omits visible. ToolJet's default lookup requires visible:true even though the menu displays options with omitted visibility. Set visible:true on selectable default options; preserve intentional hidden options. Otherwise edit preselection can appear blank. This is advisory; unknown dynamic option sources are not verified.`] : [];
 }
-var import_json5 = __toESM(require_lib(), 1);
-var toSlotName2 = (prefix, key) => `${prefix}_${key.replace(/[^A-Za-z0-9_]/g, "_")}`;
-var keyTag = (key) => {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i += 1)
-    h = Math.imul(h ^ key.charCodeAt(i), 16777619);
-  return (h >>> 0).toString(36);
-};
-function slotNames2(prefix, keys) {
-  const names = [];
-  const taken = /* @__PURE__ */ new Set();
-  const distinct2 = [...new Set(keys)];
-  const plain = distinct2.filter((k) => /^[A-Za-z0-9_]*$/.test(k));
-  const folded = distinct2.filter((k) => !/^[A-Za-z0-9_]*$/.test(k)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-  for (const k of plain) {
-    names.push(toSlotName2(prefix, k));
-    taken.add(toSlotName2(prefix, k));
-  }
-  for (const k of folded) {
-    const base = toSlotName2(prefix, k);
-    let name = base;
-    for (let n = 1; taken.has(name); n += 1)
-      name = `${base}_${keyTag(k)}${n > 1 ? `_${n}` : ""}`;
-    names.push(name);
-    taken.add(name);
-  }
-  return names;
-}
-var KEY_FIELDS = ["key", "id", "value", "name"];
-function keysOf(items, field) {
-  const keys = items.map((item) => {
-    const value2 = item && typeof item === "object" ? item[field] : void 0;
-    return typeof value2 === "string" || typeof value2 === "number" ? String(value2) : "";
-  });
-  return keys.every(Boolean) ? keys : null;
-}
-function packSlotsFromManifest(slots, props) {
-  if (!slots)
-    return void 0;
-  if (!slots.length)
-    return { fixed: [], families: [], rows: [] };
-  const names = slots.map((slot) => slot.name);
-  const families = [];
-  const claimed = /* @__PURE__ */ new Set();
-  const prefixes = [...new Set(names.flatMap((name) => /^([A-Za-z0-9]+)_./.exec(name)?.[1] ?? []))];
-  for (const prefix of prefixes) {
-    const listed = names.filter((name) => name.startsWith(`${prefix}_`));
-    const family = (props ?? []).flatMap((prop2) => {
-      if (!Array.isArray(prop2.default) || !prop2.default.length)
-        return [];
-      return KEY_FIELDS.flatMap((field) => {
-        const keys = keysOf(prop2.default, field);
-        const drawn = keys ? new Set(slotNames2(prefix, keys)) : void 0;
-        return drawn && listed.every((name) => drawn.has(name)) ? [{ prefix, itemsProp: prop2.name, keyField: field, defaultItems: prop2.default }] : [];
-      });
-    })[0];
-    if (!family)
-      continue;
-    families.push(family);
-    listed.forEach((name) => claimed.add(name));
-  }
-  return {
-    fixed: names.filter((name) => !claimed.has(name)),
-    families,
-    rows: slots.filter((slot) => slot.kind === "rows").map((slot) => slot.name)
-  };
-}
-function describePackSlots(slots) {
-  if (!slots)
-    return void 0;
-  const parts = [
-    ...slots.fixed.map((name) => slots.rows.includes(name) ? `${name} (drawn once per item; its children read {{listItem}})` : name),
-    ...slots.families.map((family) => {
-      const sample = slotNames2(family.prefix, keysOf(family.defaultItems, family.keyField) ?? []);
-      return `${family.prefix}_<${family.keyField} of each ${family.itemsProp} item>${sample.length ? ` (by default ${sample.join(", ")})` : ""}`;
-    })
-  ];
-  return parts.length ? `Child components go in slot_name ${parts.join(", ")}.` : void 0;
-}
-function packSlotsOfType(type) {
-  if (typeof type !== "string" || !type.startsWith("Lib_"))
-    return void 0;
-  return getComponentSchema(type)?.pack?.slotInfo;
-}
-function itemsOf(properties, key) {
-  const entry = properties?.[key];
-  if (entry === void 0)
-    return void 0;
-  const raw = entry && typeof entry === "object" && !Array.isArray(entry) && "value" in entry ? entry.value : entry;
-  if (raw === void 0 || raw === null || raw === "")
-    return void 0;
-  if (Array.isArray(raw))
-    return raw;
-  if (typeof raw !== "string")
-    return [];
-  const body = /^\s*\{\{([\s\S]*)\}\}\s*$/.exec(raw)?.[1]?.trim() ?? (raw.trim().startsWith("[") ? raw : void 0);
-  if (body === void 0)
-    return raw.includes("{{") ? null : [];
-  try {
-    const value2 = import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1"));
-    return Array.isArray(value2) ? value2 : [];
-  } catch {
-    return null;
-  }
-}
-function widgetSlots(component, { propertiesKnown = true } = {}) {
-  const slots = packSlotsOfType(component.type);
-  if (!slots)
-    return void 0;
-  const known = [...slots.fixed];
-  const open = [];
-  for (const family of slots.families) {
-    const items = propertiesKnown ? itemsOf(component.properties, family.itemsProp) : null;
-    const keys = items === null ? null : keysOf(items ?? family.defaultItems, family.keyField);
-    if (keys)
-      known.push(...slotNames2(family.prefix, keys));
-    else
-      open.push({ prefix: family.prefix, itemsProp: family.itemsProp });
-  }
-  return { known, open };
-}
-function resolvePackSlot(parent, slotName, child, options = {}) {
-  const slots = widgetSlots(parent, options);
-  if (!slots)
-    return { ok: true, slotName };
-  const listed = [...slots.known, ...slots.open.map((family) => `${family.prefix}_<key of each ${family.itemsProp} item>`)];
-  const where = `${String(parent.type)} "${parent.name ?? parent.id ?? "?"}"`;
-  if (!listed.length) {
-    return {
-      ok: false,
-      error: `Component "${child}": ${where} draws no child components, so a component inside it is saved and never shown. Place it beside the widget, or inside a container (a Card or FlexContainer).`
-    };
-  }
-  if (slotName === void 0) {
-    if (slots.known.includes("body"))
-      return { ok: true, slotName: "body" };
-    if (slots.known.length === 1 && !slots.open.length)
-      return { ok: true, slotName: slots.known[0] };
-    return {
-      ok: false,
-      error: `Component "${child}": ${where} draws its children in named slots; set slot_name to one of ${listed.join(", ")}. Without one the component is saved on a canvas the widget does not draw, and never shown.`
-    };
-  }
-  if (slots.known.includes(slotName))
-    return { ok: true, slotName };
-  if (slots.open.some((family) => slotName.startsWith(`${family.prefix}_`) && slotName.length > family.prefix.length + 1)) {
-    return { ok: true, slotName };
-  }
-  return {
-    ok: false,
-    error: `Component "${child}": ${where} has no slot "${slotName}" (its slots: ${listed.join(", ")}), so the component would be saved and never shown. Use one of those slots, or add the item it should go in to the widget first.`
-  };
-}
 var COMPONENT_SLOT_NAMES = ["body", "header", "footer", "modal"];
 var TAB_SLOT = /^tab-(t\d+)$/;
 var PACK_SLOT = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -1432,7 +1204,7 @@ function lintKpiCardGrids(components) {
     return figure && (delta || !valueOf4(p, "imageField")) || KPI_NAME.test(c.name ?? "") && !valueOf4(p, "imageField");
   }).map((c) => `Card grid "${c.name ?? "ShadCardGrid"}" draws figures: a card grid is for records with a face, its badge sits beside the title (a long delta is cut off) and its subtitle is small body text, not a headline number. Draw KPIs as a row of ShadStat (value, valueFormat, change, changeLabel) or one ShadSummaryStrip (items).`);
 }
-var import_json52 = __toESM(require_lib(), 1);
+var import_json5 = __toESM(require_lib(), 1);
 var FIELD_PROPS = [
   "latField",
   "lngField",
@@ -1463,7 +1235,7 @@ function literal(value2) {
   if (body === void 0)
     return typeof value2 === "string" && value2.includes("{{") ? void 0 : { value: value2 };
   try {
-    return { value: import_json52.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
+    return { value: import_json5.default.parse(body.replace(/^\(([\s\S]*)\)$/, "$1")) };
   } catch {
     return void 0;
   }
@@ -4459,50 +4231,42 @@ function lintInnerPageBands(summary) {
   return warnings;
 }
 export {
-  savedComponentLibrary as A,
-  pageIconError as B,
-  COMPONENT_PACK_DESCRIPTION as C,
-  lintComponents as D,
-  validateAppStructure as E,
-  isModalV2Type as F,
-  minimumTextHeight as G,
-  unifyChartAccents as H,
-  pageIconSchema as I,
-  componentLibraryWarnings as J,
-  lintPackItemSlots as K,
-  namespaceReads as L,
-  lintRenderedGeometryBlocking as M,
-  lintRenderedGeometryAdvisory as N,
-  FORM_SCHEMA_FIELD_TYPE_SET as O,
+  isModalV2Type as A,
+  minimumTextHeight as B,
+  unifyChartAccents as C,
+  pageIconSchema as D,
+  lintPackItemSlots as E,
+  namespaceReads as F,
+  lintRenderedGeometryBlocking as G,
+  lintRenderedGeometryAdvisory as H,
+  FORM_SCHEMA_FIELD_TYPE_SET as I,
+  SAFE_GENERATED_FORM_FIELD_TYPE_SET as J,
   PROPERTY_KEY_ALIASES as P,
-  SAFE_GENERATED_FORM_FIELD_TYPE_SET as Q,
-  packSlotsFromManifest as R,
   STYLE_KEYS_IN_PROPERTIES as S,
-  describePackSlots as T,
   applyResolvedParent as a,
-  resolvePackSlot as b,
+  introducedLintFindings as b,
   componentSlotSchema as c,
   decodeComponentParent as d,
   encodeComponentParent as e,
-  introducedLintFindings as f,
-  lintComponentSpec as g,
-  lintUnusableTextGeometry as h,
+  lintComponentSpec as f,
+  lintUnusableTextGeometry as g,
+  lintNestedContainerWidths as h,
   isPackContainerType as i,
-  lintNestedContainerWidths as j,
-  lintStandardSingleLineInputHeight as k,
+  lintStandardSingleLineInputHeight as j,
+  lintTextGeometry as k,
   lintComponentSlots as l,
-  lintTextGeometry as m,
-  lintRenderedGeometry as n,
-  isMisplacedStyleKey as o,
-  nearestCatalogKey as p,
-  componentNameSchema as q,
+  lintRenderedGeometry as m,
+  isMisplacedStyleKey as n,
+  nearestCatalogKey as o,
+  componentNameSchema as p,
+  componentNameError as q,
   resolveParentRef as r,
-  componentNameError as s,
-  slotFindingKey as t,
-  lintKanbanInteractions as u,
-  lintShadKanbanCards as v,
-  lintShadScheduleScale as w,
-  assertPageIcon as x,
-  resolveComponentLibrary as y,
-  defaultPack as z
+  slotFindingKey as s,
+  lintKanbanInteractions as t,
+  lintShadKanbanCards as u,
+  lintShadScheduleScale as v,
+  assertPageIcon as w,
+  pageIconError as x,
+  lintComponents as y,
+  validateAppStructure as z
 };

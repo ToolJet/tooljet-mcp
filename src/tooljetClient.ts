@@ -1,7 +1,7 @@
 import { resolveWorkflowReference } from './workflowReference.js';
 import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
-import { resolveComponentLibrary, type ResolvedComponentLibrary } from './componentLibrary.js';
+import { componentLibraryChoices, resolveComponentLibrary, type ResolvedComponentLibrary } from './componentLibrary.js';
 import { createAppVersionLifecycle } from './appVersionLifecycle.js';
 import { createWorkflowClient, type WorkflowClient } from './workflowClient.js';
 import { assertWorkflowQueryOptions, normalizeWorkflowQueryOptions, workflowMappingMatches } from './workflowQueryOptions.js';
@@ -614,6 +614,7 @@ export interface AppSummary {
   environment?: string;
   /** The library the app is built in (ToolJet UI 1.0 or 2.0): its saved setting, else inferred from its widgets. */
   component_library?: ResolvedComponentLibrary;
+  component_libraries?: ReturnType<typeof componentLibraryChoices>;
   pages: Array<{
     id: string;
     name?: string;
@@ -1398,6 +1399,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     return {
       app_id: full.id, name: full.name, version_id: full.editing_version?.id,
       component_library: componentLibrary,
+      component_libraries: componentLibraryChoices(),
       ...(full.should_freeze_editor === true ? { editor_frozen: true } : {}),
       ...(typeof full.editorEnvironment?.name === 'string' ? { environment: full.editorEnvironment.name } : {}),
       pages, queries, events,

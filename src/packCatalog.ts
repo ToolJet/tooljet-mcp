@@ -1,11 +1,5 @@
-/* Component packs installed in the workspace, read at start-up: every custom-component library whose latest revision
-   has a v2 manifest (manifestVersion 2, written by ToolJet's packages/pack-tools) is a pack, and each of its components
-   becomes a catalogue type `Lib_<pack>_<Component>` with its properties, styles, events, actions, exposed values and
-   usage, a default definition, and the identity libraryPack.ts stores it with. Libraries without a v2 manifest
-   (one-off custom components) stay out of the catalogue. scripts/generate-library-pack.mjs is the offline version.
-   A ToolJet that ships its packs (builtin-packs module, PR #18746) lists them at GET /api/builtin-packs, each manifest
-   at /api/builtin-packs/<pack>/<hash>/manifest.json (written by `tooljet library build`, no manifestVersion). Those
-   packs win over installed libraries, and their components are stored as PackComponent (libraryPack.ts). */
+/* Expose shipped packs and published workspace libraries as Lib_<pack>_<Component> catalog types.
+   The editor stores shipped components by server pack ID and workspace components by library identity. */
 import type { ComponentSchema } from './catalog.js';
 import { registerComponentSchemas } from './catalog.js';
 import { registerPackDefinitions } from './packDefaults.js';
@@ -48,6 +42,7 @@ export interface InstalledLibrary {
   id: string;
   name: string;
   correlationId: string;
+  codeMode?: boolean;
   manifest: { manifestVersion?: number; pack?: string; surface?: Record<string, unknown>; themeMode?: string; components?: Record<string, ManifestComponent> } | null;
   revisions?: Array<{ version: string }>;
 }
@@ -88,11 +83,19 @@ export interface BuiltinPackInfo {
 type PackManifest = NonNullable<InstalledLibrary['manifest']>;
 type PackResult = { pack: LibraryPack; schemas: Record<string, ComponentSchema>; definitions: Record<string, unknown> };
 
-export function packFromLibrary(lib: InstalledLibrary): PackResult | null {
+function legacyPackId(lib: InstalledLibrary): string {
+  const name = lib.manifest?.manifestVersion === 2 ? lib.manifest.pack || lib.name : '';
+  return typeof name === 'string' ? name.toLowerCase().replace(/[^a-z0-9]+/g, '') : '';
+}
+
+export function packFromLibrary(lib: InstalledLibrary, occupied: ReadonlySet<string> = new Set()): PackResult | null {
   const manifest = lib.manifest;
-  if (!manifest || manifest.manifestVersion !== 2 || !manifest.components) return null;
-  const packId = (manifest.pack || lib.name).toLowerCase().replace(/[^a-z0-9]+/g, '');
-  return packFromManifest(packId, lib.name, lib.revisions?.[0]?.version ?? '', manifest, {
+  if (lib.codeMode || !lib.revisions?.[0]?.version || !manifest?.components || !Object.keys(manifest.components).length) return null;
+  if (manifest.manifestVersion !== undefined && manifest.manifestVersion !== 2) return null;
+  // Preserve legacy pack prefixes when unique. Public CLI libraries use a stable ID even after renaming.
+  const legacy = legacyPackId(lib);
+  const packId = legacy && !occupied.has(legacy) ? legacy : `lib${lib.id.replace(/-/g, '')}`;
+  return packFromManifest(packId, lib.name, lib.revisions[0].version, manifest, {
     kind: 'library',
     libraryId: lib.id,
     correlationId: lib.correlationId,
@@ -247,16 +250,35 @@ function packFromManifest(
   };
 }
 
-/** Reads the packs ToolJet ships, else the workspace's installed packs, and registers them; returns their ids. A
+/** Registers both shipped packs and published workspace libraries, returning their names and versions. A
  *  failure leaves the offline catalogue. `listBuiltin` resolves null on a server without the builtin-packs module. */
 export async function loadInstalledPacks(
   listLibraries: () => Promise<InstalledLibrary[]>,
   listBuiltin?: () => Promise<Array<{ info: BuiltinPackInfo; manifest: PackManifest | null }> | null>,
 ): Promise<string[]> {
-  let packs: PackResult[] = [];
-  const builtin = listBuiltin ? await listBuiltin().catch(() => null) : null;
-  if (builtin?.length) packs = builtin.map((b) => packFromBuiltin(b.info, b.manifest)).filter((p): p is PackResult => !!p);
-  if (!packs.length) packs = (await listLibraries()).map(packFromLibrary).filter((p): p is PackResult => !!p);
+  // The first authenticated request establishes the PAT session used by both reads.
+  const builtin = await listBuiltin?.().catch(() => null);
+  const libraries = await listLibraries().catch(() => []);
+  const packs = (builtin ?? []).map(b => packFromBuiltin(b.info, b.manifest)).filter((p): p is PackResult => !!p);
+  const occupied = new Set(packs.map(p => p.pack.prefix.slice(4, -1)));
+  // Stable IDs disambiguate names that normalize to the same catalog prefix.
+  const nameCounts = new Map<string, number>();
+  for (const lib of libraries) {
+    occupied.add(`lib${lib.id.replace(/-/g, '')}`);
+    if (lib.codeMode || !lib.revisions?.[0]?.version) continue;
+    const name = legacyPackId(lib);
+    nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+  }
+  for (const [name, count] of nameCounts) if (count > 1) occupied.add(name);
+  for (const lib of libraries) {
+    try {
+      const built = packFromLibrary(lib, occupied);
+      if (built) packs.push(built);
+    } catch {
+      // A malformed published manifest must not hide the other libraries in this workspace.
+      console.error(`tooljet-mcp: skipped invalid component manifest for library ${lib.id}`);
+    }
+  }
   if (!packs.length) return [];
   registerComponentSchemas(Object.assign({}, ...packs.map((p) => p.schemas)));
   registerPackDefinitions(Object.assign({}, ...packs.map((p) => p.definitions)));

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadInstalledPacks, packFromBuiltin, type InstalledLibrary } from '../src/packCatalog.js';
-import { libraryPins, libraryTypeOf, registerLibraryPacks, toLibraryComponent } from '../src/libraryPack.js';
+import { missingLibraryPins, libraryTypeOf, registerLibraryPacks, toLibraryComponent } from '../src/libraryPack.js';
 import { lintComponentSpec } from '../src/lint.js';
 
 // ToolJet #18746 ships its packs (server builtin-packs) and stores a pack component as PackComponent with only
@@ -41,7 +41,7 @@ describe('a pack ToolJet ships (builtin-packs)', () => {
       componentName: { value: 'Button' },
     });
     expect(JSON.stringify(stored)).not.toMatch(/libraryId|correlationId|libraryName/);
-    expect(libraryPins()).toBeUndefined();
+    expect(missingLibraryPins([stored], {})).toBeUndefined();
   });
 
   it('reads a stored PackComponent back as its Lib_* type', () => {
@@ -59,14 +59,14 @@ describe('a pack ToolJet ships (builtin-packs)', () => {
 });
 
 describe('loadInstalledPacks', () => {
-  it('prefers the shipped packs over installed libraries', async () => {
+  it('offers shipped packs alongside installed libraries', async () => {
     let librariesRead = false;
     const ids = await loadInstalledPacks(
       async () => { librariesRead = true; return [library]; },
       async () => [{ info, manifest }],
     );
-    expect(ids).toEqual(['Ant Design 1.4.28']);
-    expect(librariesRead).toBe(false);
+    expect(ids).toEqual(['Ant Design 1.4.28', 'shadcn UI 2.1.29']);
+    expect(librariesRead).toBe(true);
   });
 
   it('falls back to installed libraries on a server without builtin-packs, still writing LibraryComponent with pins', async () => {
@@ -75,7 +75,7 @@ describe('loadInstalledPacks', () => {
     const stored = toLibraryComponent({ name: 't', type: 'Lib_shadcn_Text', properties: {} });
     expect(stored.type).toBe('LibraryComponent');
     expect(stored.properties).toMatchObject({ libraryId: { value: 'lib-1' }, correlationId: { value: 'corr-1' } });
-    expect(libraryPins()).toEqual({ corr1: '2.1.29' });
+    expect(missingLibraryPins([stored], {})).toEqual({ corr1: '2.1.29' });
     expect(libraryTypeOf({ type: 'LibraryComponent', properties: stored.properties })).toBe('Lib_shadcn_Text');
   });
 

@@ -6,8 +6,7 @@ import type { AppTheme, CreateAppResult, ToolJetClient } from '../tooljetClient.
 import { ok, fail, type ToolDef } from './types.js';
 import { themeDefinition } from './themeDefinition.js';
 import { accentWarning } from '../themeAccent.js';
-import { COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
-import { libraryPins } from '../libraryPack.js';
+import { checkedLibrarySelection, COMPONENT_PACK_DESCRIPTION, defaultPack, savedComponentLibrary, type ComponentLibrary } from '../componentLibrary.js';
 import { codeCliProblem } from './codeApp.js';
 
 // The standard theme's primary, for the accent note (a stock blue reads plain).
@@ -51,6 +50,7 @@ export type CreateAppThemeChoice = 'standard' | 'workspace_default' | string | D
 export interface CreateAppToolResult extends CreateAppResult {
   /** The library the app is built in, saved on the app: "ui2" (ToolJet UI 2.0) unless the call asked for "ui1". */
   component_library: ComponentLibrary;
+  library_selection?: string;
   /** The component pack a UI 2.0 app is built with (its UI 2.0 widgets draw as that pack's). */
   component_pack?: string;
   /** Set when the library could not be saved; the app still exists. */
@@ -129,13 +129,14 @@ export function createAppTool(client: ToolJetClient): ToolDef {
       component_library: z.enum(['ui1', 'ui2']).optional().describe(
         'The component library the app is built in, saved on the app (the components panel lists it). Default "ui2", ' +
           'ToolJet UI 2.0; "ui1" (ToolJet UI 1.0, the native widgets) only when the user asks for it.'),
+      library_selection: z.string().optional().describe("Exact picker value published in the workspace catalog; use for a named pack or custom library."),
       component_pack: z.string().regex(/^[a-z0-9]+$/i).optional().describe(COMPONENT_PACK_DESCRIPTION),
       build_mode: z.enum(['visual', 'code']).optional().describe(
         'How the app is built, fixed at creation. Default "visual" (ToolJet components on the canvas). "code" makes a ' +
           'Code mode app: React code written with the code_app_* tools. Ask the user which they want when the request ' +
           'does not say.'),
     },
-    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string; build_mode?: 'visual' | 'code' }) {
+    async handler(args: { name: string; theme?: string | DerivedTheme; app_mode?: 'light' | 'dark'; component_library?: ComponentLibrary; component_pack?: string; library_selection?: string; build_mode?: 'visual' | 'code' }) {
       try {
         if (args.build_mode === 'code') {
           // Checked before the app exists: without the CLI the app could never be scaffolded.
@@ -144,7 +145,7 @@ export function createAppTool(client: ToolJetClient): ToolDef {
           // The visual build's settings (theme, component library, the published pack's pin) do not apply: a Code mode
           // app draws from its own code, and a pin to any library but its own would hold its release.
           const created = await client.createApp(args.name, { buildMode: 'code' });
-          const ignored = (['theme', 'app_mode', 'component_library', 'component_pack'] as const).filter((k) => args[k] !== undefined);
+          const ignored = (['theme', 'app_mode', 'component_library', 'component_pack', 'library_selection'] as const).filter((k) => args[k] !== undefined);
           return ok({
             ...created,
             ...(ignored.length ? { note: `Not applied to a Code mode app: ${ignored.join(', ')}. Its look is set in its code (frontend/styles/theme.css).` } : {}),
@@ -154,29 +155,30 @@ export function createAppTool(client: ToolJetClient): ToolDef {
         // Internal callers can bypass MCP input validation. Reject incomplete themes before creating
         // even an empty app; a theme name alone does not prove that its requested palette was applied.
         if (typeof args.theme === 'object') derivedThemeSchema.parse(args.theme);
+        const savedLibrary = args.library_selection === undefined
+          ? savedComponentLibrary(args.component_library ?? 'ui2', args.component_pack)
+          : checkedLibrarySelection(args.library_selection, args.component_library, args.component_pack);
         const created = await client.createApp(args.name);
         const componentLibrary: ComponentLibrary = args.component_library ?? 'ui2';
         const choice: CreateAppThemeChoice = args.theme ?? 'standard';
-        // The published library this server exposes renders only where the version pins it (libraryPack.ts).
-        const pins = libraryPins();
-        const pinned = pins ? { customComponentLibraries: pins } : {};
         const result: CreateAppToolResult = {
           ...created,
           component_library: componentLibrary,
-          ...(componentLibrary === 'ui2' && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack())!.toLowerCase() } : {}),
+          ...(args.library_selection ? { library_selection: args.library_selection } : {}),
+          ...(!args.library_selection && componentLibrary === 'ui2' && (args.component_pack || defaultPack()) ? { component_pack: (args.component_pack || defaultPack())!.toLowerCase() } : {}),
           theme: { mode: 'workspace_default' },
         };
         // What the app saves: a pack's "pack:<id>" for UI 2.0, so the components panel and later builds use that pack.
-        const savedLibrary = savedComponentLibrary(componentLibrary, args.component_pack);
         // Saved explicitly, not left to the server's default for new apps: older ToolJet servers create apps without it.
         // A failure never fails the call: the app exists, and a retried create_app would make a second one.
         const saveLibrary = () => Promise.resolve().then(() => client.updateAppSettings({
           appId: created.app_id,
           versionId: created.version_id,
-          globalSettings: { componentLibrary: savedLibrary, ...pinned },
+          globalSettings: { componentLibrary: savedLibrary },
         })).catch((libraryErr: unknown) => {
-          result.component_library_warning = `Could not save component_library "${componentLibrary}": ` +
-            `${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. Build in it anyway.`;
+          result.component_library_warning = `Could not save component_library "${savedLibrary}": ` +
+            `${libraryErr instanceof Error ? libraryErr.message : String(libraryErr)}. ` +
+            (args.library_selection ? 'Retry update_app_settings on this version before placing components.' : 'Build in it anyway.');
         });
         if (choice === 'workspace_default') {
           await saveLibrary();
@@ -191,7 +193,7 @@ export function createAppTool(client: ToolJetClient): ToolDef {
           await client.updateAppSettings({
             appId: created.app_id,
             versionId: created.version_id,
-            globalSettings: { theme, componentLibrary: savedLibrary, ...pinned, ...(appMode ? { appMode } : {}) },
+            globalSettings: { theme, componentLibrary: savedLibrary, ...(appMode ? { appMode } : {}) },
           });
           const mode = choice === 'standard' ? 'standard' : typeof choice === 'object' ? 'derived' : 'named';
           const accentNote = mode === 'standard' ? accentWarning(STANDARD_PRIMARY) : mode === 'derived' ? accentWarning((choice as DerivedTheme).definition) : null;

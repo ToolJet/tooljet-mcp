@@ -10,9 +10,28 @@ export interface ResolvedComponentLibrary {
   library: ComponentLibrary;
   /** "saved": the app's own setting; "inferred": no setting, read from the widgets the app holds. */
   source: 'saved' | 'inferred';
-  /** The component pack the app is built with (saved as "pack:<id>", picked in the components panel): its UI 2.0
-   *  widgets draw as that pack's components. */
+  /** Catalog ID for the Lib_<pack>_<Component> types this version uses. */
   pack?: string;
+  /** Exact picker value when it cannot be recovered from the catalog ID. */
+  selection?: string;
+}
+
+/** The editor's persisted picker value and the catalog prefix used to author its components. */
+export function componentLibraryChoices() {
+  return serverLibraryPacks().map(p => ({
+    value: p.kind === 'builtin' ? `pack:${p.pack}` : `lib:${p.libraryId}`,
+    name: p.kind === 'builtin' && p.pack === 'shadcn' ? 'Rocket 2.0' : p.libraryName,
+    ...(p.kind === 'builtin' && p.pack === 'shadcn' && p.libraryName !== 'Rocket 2.0' && { aliases: [p.libraryName] }),
+    pack: p.prefix.slice(4, -1),
+  }));
+}
+
+export function checkedLibrarySelection(value: string, library?: string, pack?: string): string {
+  if (library !== undefined || pack !== undefined) throw new Error('Provide only one library selection.');
+  if (!componentLibraryChoices().some(choice => choice.value === value)) {
+    throw new Error(`Component library "${value}" is unavailable in this workspace. Read get_app_summary for the available choices.`);
+  }
+  return value;
 }
 
 /** The pack a new UI 2.0 app is built with: the agent's default (MCP_AGENT_PACK), until the user picks another. Unset,
@@ -30,12 +49,9 @@ export const savedComponentLibrary = (library: ComponentLibrary, pack?: string):
   return library === 'ui2' && chosen ? `pack:${chosen}` : library;
 };
 
-/** component_pack on create_app and update_app_settings: a shipped pack's id (shadcn is Rocket 2.0, antd Ant Design,
- *  mui Material UI), whose Lib_<pack>_* widgets the app is then built with. */
+/** Retained for callers that already know a shipped pack ID. */
 export const COMPONENT_PACK_DESCRIPTION =
-  'The component pack a UI 2.0 app is built with, saved on the app (the components panel lists it): "shadcn" (Rocket ' +
-  '2.0, ToolJet\'s own look), "antd" (Ant Design) or "mui" (Material UI). Pass it when the user names a design system; ' +
-  'then build with that pack\'s Lib_<pack>_* widgets. Omitted, the default pack.';
+  'A shipped component pack ID for UI 2.0. For named libraries use library_selection with a value from the workspace catalog.';
 
 export const COMPONENT_LIBRARY_NAMES: Record<ComponentLibrary, string> = {
   ui1: 'ToolJet UI 1.0',
@@ -54,11 +70,15 @@ export function resolveComponentLibrary(
   const settings = globalSettings as { componentLibrary?: unknown; component_library?: unknown } | undefined;
   const saved = settings?.componentLibrary ?? settings?.component_library;
   if (saved === 'ui1' || saved === 'ui2') return { library: saved, source: 'saved' };
-  // Picked in the components panel: a component pack draws the UI 2.0 widgets; another custom library (lib:<id>) is
-  // not one the AI builds with, so the app is built in UI 1.0.
-  if (typeof saved === 'string' && saved.startsWith('pack:') && saved.length > 5)
-    return { library: 'ui2', source: 'saved', pack: saved.slice(5) };
-  if (typeof saved === 'string' && saved.startsWith('lib:')) return { library: 'ui1', source: 'saved' };
+  if (typeof saved === 'string' && saved.startsWith('pack:') && saved.length > 5) {
+    const id = saved.slice(5);
+    const catalogId = componentLibraryChoices().find(choice => choice.value === saved)?.pack ?? id;
+    return { library: 'ui2', source: 'saved', pack: catalogId, ...(id !== catalogId && { selection: saved }) };
+  }
+  if (typeof saved === 'string' && saved.startsWith('lib:')) {
+    const choice = componentLibraryChoices().find(item => item.value === saved);
+    return { library: 'ui2', source: 'saved', selection: saved, ...(choice && { pack: choice.pack }) };
+  }
   for (const type of componentTypes) if (isUi2Type(type) || isPackType(type)) return { library: 'ui2', source: 'inferred' };
   return { library: 'ui1', source: 'inferred' };
 }
@@ -84,7 +104,7 @@ function buildPack(library: { source: string; pack?: string }): string | undefin
 
 /** The UI 2.0 advice for an app built with a pack: its Lib_<pack>_* types, and the dialog and side sheet it has. */
 function packFix(pack: string): string {
-  const components = libraryPacksAll().find((p) => p.pack === pack)?.components ?? {};
+  const components = libraryPacksAll().find((p) => p.prefix === `Lib_${pack}_`)?.components ?? {};
   const first = (...names: string[]) => names.find((name) => components[name]);
   const dialog = first('Dialog', 'Modal');
   const sheet = first('Drawer', 'Sheet');
@@ -115,6 +135,7 @@ export function componentLibraryWarnings(
   request?: string,
 ): string[] {
   if (request?.trim()) return [];
+  const selectedPack = 'pack' in library ? library.pack : undefined;
   const off = new Map<string, string[]>();
   for (const page of pages ?? []) {
     for (const component of page.components ?? []) {
@@ -122,7 +143,9 @@ export function componentLibraryWarnings(
       // A pack widget is a UI 2.0 widget in the pack's look: in a UI 2.0 app it is not from the other library (warned,
       // a pack app's every lint said so; Together round, 2026-10-24).
       const ui2Side = isUi2Type(type) || isPackType(type);
-      const mismatch = library.library === 'ui1' ? ui2Side : !ui2Side && !nativeFitsUi2(component);
+      const mismatch = library.library === 'ui1' ? ui2Side
+        : selectedPack ? !type.startsWith(`Lib_${selectedPack}_`) && !nativeFitsUi2(component) && type !== 'ModalV2'
+        : !ui2Side && !nativeFitsUi2(component);
       if (!mismatch) continue;
       off.set(type, [...(off.get(type) ?? []), component.name ?? type]);
     }
@@ -144,4 +167,25 @@ export function componentLibraryWarnings(
     `This app is built in ${appName} (${how}), and the plan adds widgets from the other library: ${listed}. ${fix} ` +
       'If the user asked for the other library in this request, keep the plan and put their words in component_library_request.',
   ];
+}
+
+/** Check the build against the chosen library without asking it to migrate pre-existing widgets. */
+export function verifyLibrarySelection(
+  library: ResolvedComponentLibrary | undefined,
+  pages: Array<{ components: Array<{ id: string; name?: string; type?: string; styles?: unknown }> }>,
+  expected: string,
+  existingIds: string[],
+): string[] {
+  const choice = componentLibraryChoices().find(item => item.value === expected);
+  const saved = library?.selection ?? (library?.pack ? `pack:${library.pack}` : undefined);
+  if (!choice || saved !== expected) return ['The app version does not have the requested component library selected and available.'];
+  const existing = new Set(existingIds);
+  const added = pages.flatMap(page => page.components).filter(component => !existing.has(component.id));
+  const prefix = `Lib_${choice.pack}_`;
+  const mismatches = added.filter(c => !c.type?.startsWith(prefix) && !nativeFitsUi2(c) && c.type !== 'ModalV2');
+  if (mismatches.length) return [`Use ${choice.name} components for: ${mismatches.map(c => c.name ?? c.id).join(', ')} (expected ${prefix}*).`];
+  if (!existing.size && added.length && !added.some(c => c.type?.startsWith(prefix))) {
+    return [`The new UI contains no components from ${choice.name}.`];
+  }
+  return [];
 }
