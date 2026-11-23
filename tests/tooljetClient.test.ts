@@ -381,6 +381,7 @@ describe('createClient', () => {
         if (url === version) {
           expect(body).toEqual({ status: 'PUBLISHED' });
           writes.push('save');
+          if (deny === 'save') return new Response('Unresolved reference', { status: 400 });
           state.status = 'PUBLISHED';
         } else if (url === version + '/promote') {
           expect(body.currentEnvironmentId).toBe(state.environment);
@@ -388,24 +389,34 @@ describe('createClient', () => {
           writes.push('promote ' + next);
           if (deny === next) return new Response('Denied', { status: 403 });
           state.environment = next;
-          if (deny === 'lost promotion response') throw new Error('Request timed out');
+          if (deny === 'lost promotion response') throw new DOMException('Request timed out', 'TimeoutError');
         } else if (url === release) {
           expect(body).toEqual({ versionToBeReleased: row.id });
           writes.push('release');
           if (deny === 'release') return new Response('Release blocked', { status: 403 });
           if (deny !== 'stale pointer') state.live = row.id;
-          if (deny === 'lost release response') throw new Error('Request timed out');
+          if (deny === 'lost release response') throw new DOMException('Request timed out', 'TimeoutError');
         } else throw new Error('Unexpected write: ' + url);
         return new Response(null, { status: 204 });
       });
       return { state, writes, run: () => createClient(auth, config).releaseApp('garden', 'harvest') };
     }
 
-    it.each(['save', 'promote', 'release'])('stops before saving when preflight denies %s', async permission => {
-      auth.authedFetch.mockResolvedValue(new Response('Missing permission: ' + permission, { status: 403 }));
-      await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('Missing permission: ' + permission);
+    it('stops before saving and reports the preflight denial', async () => {
+      auth.authedFetch.mockResolvedValue(new Response('Approval required', { status: 403 }));
+      await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('Approval required');
       expect(auth.authedFetch.mock.calls).toEqual([[preflight]]);
     });
+    it.each([['staging', 'production'], ['development', 'development']])(
+      'rejects an inconsistent path %s -> %s before writing', async (start, end) => {
+        auth.authedFetch.mockResolvedValue(Response.json({
+          versions: [{ id: 'harvest', status: 'DRAFT', current_environment_id: 'development' }],
+          release_preflight: { version_id: 'harvest', environment_path: [start, end].map(id => ({ id, name: id })) },
+        }));
+        await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('Cannot verify the release path');
+        expect(auth.authedFetch.mock.calls).toEqual([[preflight]]);
+      }
+    );
     it('refuses an older server that ignores preflight before writing', async () => {
       auth.authedFetch.mockResolvedValue(Response.json({ versions: [{ id: 'harvest', status: 'DRAFT' }] }));
       await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('No changes were made');
@@ -425,9 +436,34 @@ describe('createClient', () => {
       ['staging', 'development'], ['production', 'staging'], ['release', 'production'], ['lost promotion response', 'staging'],
     ])('reports the observed state after %s fails', async (deny, environment) => {
       const app = server('DRAFT', ['development', 'staging', 'production'], deny);
-      await expect(app.run()).rejects.toThrow('saved in ' + environment);
+      const next = environment === 'production' ? 'release' : 'promote';
+      const retry = deny === 'lost promotion response' ? 'Retry release_app' : 'Resolve the reported issue, then retry release_app';
+      await expect(app.run()).rejects.toThrow(`saved in ${environment}. ${retry} from ${environment}, or use the version menu to ${next}`);
       expect(app.state).toEqual({ status: 'PUBLISHED', environment, live: 'previous' });
       expect(app.writes.filter(write => write === 'release')).toHaveLength(deny === 'release' ? 1 : 0);
+    });
+    it('leaves a rejected save editable', async () => {
+      const app = server('DRAFT', ['development', 'production'], 'save');
+      await expect(app.run()).rejects.toThrow('a draft in development. You can continue editing');
+      expect(app.writes).toEqual(['save']);
+    });
+    it('reports an explicit release rejection even if the selected version is already live', async () => {
+      const app = server('PUBLISHED', ['production'], 'release');
+      app.state.live = 'harvest';
+      await expect(app.run()).rejects.toThrow(/403.*Release blocked.*saved in production/);
+      expect(app.writes).toEqual(['release']);
+    });
+    it.each([
+      { lost: 'release', message: 'Could not verify which version is live' },
+      { lost: 'save', message: "Could not verify the version's current state" },
+    ])('reports an unknown state when the $lost response and readback are lost', async ({ lost, message }) => {
+      const status = lost === 'release' ? 'PUBLISHED' : 'DRAFT';
+      auth.authedFetch.mockResolvedValueOnce(Response.json({
+        versions: [{ id: 'harvest', status, current_environment_id: 'production' }],
+        release_preflight: { version_id: 'harvest', environment_path: [{ id: 'production', name: 'production' }] },
+      })).mockRejectedValue(new TypeError('fetch failed'));
+      await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow(message);
+      expect(auth.authedFetch.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(1);
     });
     it('checks the live pointer after a lost release response without repeating the release', async () => {
       const app = server('PUBLISHED', ['production'], 'lost release response');

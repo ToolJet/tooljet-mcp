@@ -14,7 +14,7 @@ export function releaseAppTool(client: ToolJetClient): ToolDef {
     description:
       'Release a specific ToolJet app version so it becomes the app\'s live released version. ' +
       'Use only when the user explicitly asked to release or publish the app, and pass confirm:true. ' +
-      'Checks permissions before saving or promoting. Promotes the selected version one environment at a time to ' +
+      'Checks permissions and applicable review and security policies before saving or promoting. Promotes the selected version one environment at a time to ' +
       'production when the workspace requires it, then releases only that exact version. On failure it preserves completed steps and reports the verified state. ' +
       'Returns a verified current_version_id after reading the app back.',
     inputSchema: {

@@ -1604,7 +1604,7 @@ function pageHiddenNeedsUpdate(page2, expected) {
 }
 async function assertOk(res, method) {
   if (!res.ok) {
-    const detail = await res.text();
+    const detail = await res.text().catch(() => res.statusText);
     if (method === "createTable" && res.status === 451)
       throw new TableQuotaError();
     throw new ToolJetHttpError(res.status, method, detail);
@@ -2425,7 +2425,8 @@ function createClient(auth, config) {
       releasing = true;
       await put(`${appPath}/release`, { versionToBeReleased: versionId }, "releaseApp.release");
     } catch (error) {
-      if (releasing) {
+      const lostResponse = error instanceof TypeError || error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+      if (releasing && lostResponse) {
         const app2 = await getApp(appId).catch(() => void 0);
         if ((app2?.current_version_id ?? app2?.currentVersionId) === versionId)
           return result();
@@ -2439,7 +2440,11 @@ function createClient(auth, config) {
         throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
       }
       const nextAction = env2.id === destination.id ? "release" : "promote";
-      const guidance = observed.status === "DRAFT" ? "You can continue editing this draft." : `Use the version menu to ${nextAction} it manually once you have permission, or create a new draft to chat or edit.`;
+      let guidance = "You can continue editing this draft.";
+      if (observed.status === "PUBLISHED") {
+        const retry = lostResponse ? "Retry release_app" : "Resolve the reported issue, then retry release_app";
+        guidance = `${retry} from ${env2.name}, or use the version menu to ${nextAction} it manually. Create a new draft to chat or edit.`;
+      }
       throw new Error(`${String(error)}. The version is ${observed.status === "DRAFT" ? "a draft" : "saved"} in ${env2.name}. ${guidance}`);
     }
     const app = await getApp(appId).catch(() => void 0);
