@@ -95,8 +95,8 @@ Body: { "versionToBeReleased": "<version-uuid>" }
 ```
 The endpoint has no useful response body. MCP reads `GET /api/apps/:appId` afterward and succeeds only when
 `current_version_id` matches the requested version. Multi-environment installations enforce ToolJet's existing
-save and promote-to-production steps, which `release_app` performs when ToolJet reports that production promotion
-is required and only after explicit release confirmation.
+save and promote-to-production steps. Before writing, MCP reads the exact version from
+`GET /api/apps/:appId/versions?releasePreflightFor=:versionId`. ToolJet checks release permission, save permission for a draft, and promotion permission if the workspace requires further promotion. The response includes `release_preflight.version_id` and an ordered `environment_path` starting at the current environment. An older server without this field cannot confirm permissions, so MCP stops before saving. A later failure preserves completed steps; the version menu can continue promotion or release, and editing requires a draft.
 
 ---
 

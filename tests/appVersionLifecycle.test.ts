@@ -73,7 +73,11 @@ describe('app version lifecycle', () => {
   });
   it('keeps releasing a named draft version with the exact requested id', async () => {
     const fetch = vi.fn(async (path: string, options?: RequestInit) => {
-      if (path === '/api/apps/garden/versions') return Response.json({ versions: [{ id: 'snapshot', status: 'DRAFT', version_type: 'version' }] });
+      if (path.startsWith('/api/apps/garden/versions')) {
+        const preflight = path.includes('?releasePreflightFor=');
+        return Response.json({ versions: [{ id: 'snapshot', status: preflight ? 'DRAFT' : 'PUBLISHED', version_type: 'version', currentEnvironmentId: 'dev' }],
+          release_preflight: { version_id: 'snapshot', environment_path: [{ id: 'dev', name: 'development' }] } });
+      }
       if (options?.method === 'PUT') return new Response(null, { status: 204 });
       return Response.json({ current_version_id: 'snapshot' });
     });
