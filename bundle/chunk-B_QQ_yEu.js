@@ -1,16 +1,16 @@
 import { createRequire } from "node:module";
-import { e9 as resolveRef } from "./chunk-BrqxMLVS.js";
-import { aC as external_exports, aK as fail, aL as ok, aM as activePackSet, aN as registerComponentSchemas, aO as registerLibraryPacks, ax as getComponentSchema, aP as exposeActions, aG as getCatalog, aE as internalComponentTypeNote, aH as getLegacyComponentReplacement } from "./chunk-CS6hDtiZ.js";
-import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, e as encodeComponentParent, b as introducedLintFindings, l as lintComponentSlots, f as lintComponentSpec, g as lintUnusableTextGeometry, h as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, n as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, o as nearestCatalogKey, p as componentNameSchema, q as componentNameError, s as slotFindingKey, t as lintKanbanInteractions, u as lintShadKanbanCards, v as lintShadScheduleScale } from "./chunk-Z4CBDLNB.js";
-import { y as resolvePackSlot, K as packSlotsFromManifest, L as describePackSlots, A as retiredUi2Name, M as suggestedHtmlHeight, N as componentLibraryChoices } from "./chunk-BZWhmyFq.js";
+import { e9 as resolveRef } from "./chunk-BSIUjP8l.js";
+import { ax as external_exports, ay as fail, az as ok, aA as exposeActions } from "./chunk-BjPiAByC.js";
+import { d as decodeComponentParent, c as componentSlotSchema, r as resolveParentRef, a as applyResolvedParent, i as isPackContainerType, e as encodeComponentParent, b as introducedLintFindings, l as lintComponentSlots, f as lintComponentSpec, g as lintUnusableTextGeometry, h as lintNestedContainerWidths, j as lintStandardSingleLineInputHeight, k as lintTextGeometry, m as lintRenderedGeometry, n as isMisplacedStyleKey, P as PROPERTY_KEY_ALIASES, S as STYLE_KEYS_IN_PROPERTIES, o as nearestCatalogKey, p as componentNameSchema, q as componentNameError, s as slotFindingKey, t as lintKanbanInteractions, u as lintShadKanbanCards, v as lintShadScheduleScale } from "./chunk-D82B7yRZ.js";
+import { n as resolvePackSlot, I as activePackSet, J as registerComponentSchemas, K as registerLibraryPacks, L as packSlotsFromManifest, M as describePackSlots, o as getComponentSchema, w as retiredUi2Name, N as suggestedHtmlHeight, O as componentLibraryChoices, q as getCatalog, i as internalComponentTypeNote, v as getLegacyComponentReplacement } from "./chunk-DoFIUO2V.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Script } from "node:vm";
 import { randomUUID } from "node:crypto";
-import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-CgSLCcEW.js";
+import { n as normalizeQueryOptions, v as validateQueryOptions, i as issueMessages } from "./chunk-oJ9NoDkD.js";
 import { isDeepStrictEqual } from "node:util";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-BIWKBVpC.js";
+import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-eKcwgb7t.js";
 createRequire(import.meta.url);
 function strictEntry(shape, describeUnknown) {
   return external_exports.strictObject(shape, {

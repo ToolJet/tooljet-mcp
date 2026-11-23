@@ -1,3 +1,4 @@
+import { runpyReturnError } from './runpyReturn.js';
 import { resolveWorkflowReference } from './workflowReference.js';
 import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
@@ -3223,6 +3224,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    // A bare-ID update only learns the saved kind at this point.
+    if (query.kind === 'runpy') {
+      const message = runpyReturnError(params.options.code);
+      if (message) throw new Error(message);
+    }
     if (query.kind === 'workflows') {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
