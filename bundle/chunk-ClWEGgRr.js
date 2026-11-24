@@ -1,13 +1,13 @@
 import { createRequire } from "node:module";
 import { s as strictEntry, l as specSchema, o as nodeSchema, q as loadInstalledPacks, r as listWorkspaceAppsTool, t as listWorkspaceFoldersTool, u as listWorkspaceUsersTool, v as manageWorkspaceUsersTool, w as inspectDatasourceSchemaTool, x as getComponentCatalogTool, y as updateComponentsTool, z as updateLayoutTool, A as datasourceMetadataTools, B as nodeCatalog, D as capabilityRequestSchema, E as getWorkflowCapabilities, G as lint, H as apply, I as deleteNode, J as validateGraph, K as editContractSchema, L as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, M as workspaceUserActionTools } from "./chunk-B_QQ_yEu.js";
-import { f as loadConfig, g as createClient, h as createAppTool, m as manageThemeTool, p as projectJavascriptRuntime, j as projectAppSettings, k as compactTheme, o as pageSettingProperties, v as validateTableBatch, q as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, r as workflowOperations, s as branchIdFor, u as withBranchContext } from "./chunk-u-tkCYlD.js";
-import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as manageAppPermissionsTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools, Y as appPermissionActionTools } from "./chunk-_UrRFmF7.js";
+import { f as loadConfig, g as createClient, h as createAppTool, m as manageThemeTool, R as ReleaseScanTimeout, p as projectJavascriptRuntime, j as projectAppSettings, k as compactTheme, o as pageSettingProperties, v as validateTableBatch, q as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, r as workflowOperations, s as branchIdFor, u as withBranchContext } from "./chunk-DPANHZWM.js";
+import { W as WebStandardStreamableHTTPServerTransport, O as getRequestListener, Q as manageAppPermissionsTool, U as listWorkspaceGroupsTool, V as manageWorkspaceGroupsTool, a as autoReadPreflight, X as workspaceGroupActionTools, Y as appPermissionActionTools } from "./chunk-Brb1f9hL.js";
 import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-CroQHJzZ.js";
-import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-Cge2zq1d.js";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-DgR0PQ0M.js";
+import { g as verifyPageRenderTool, h as containsExactValue, a as prepareQueryOptionsForWrite, i as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, j as persistedEventIds } from "./chunk-sRNmXtKg.js";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-DA8h0Rj0.js";
 import { e9 as resolveRef } from "./chunk-BSIUjP8l.js";
 import { ax as external_exports, az as ok, ay as fail } from "./chunk-BjPiAByC.js";
-import { M as McpServer } from "./chunk-BQZ7fRc1.js";
+import { M as McpServer } from "./chunk-Dua2ikp9.js";
 import { D as pageIconSchema, p as componentNameSchema, y as lintComponents, r as resolveParentRef, a as applyResolvedParent, b as introducedLintFindings, l as lintComponentSlots, G as lintRenderedGeometryBlocking, H as lintRenderedGeometryAdvisory, d as decodeComponentParent, I as FORM_SCHEMA_FIELD_TYPE_SET, J as SAFE_GENERATED_FORM_FIELD_TYPE_SET } from "./chunk-D82B7yRZ.js";
 import { Z as inPackSet, I as activePackSet, _ as newPackSet, V as checkedLibrarySelection, U as savedComponentLibrary, W as COMPONENT_PACK_DESCRIPTION, $ as verifyLibrarySelection, a0 as readCatalogBytes, a1 as allComponentSchemas } from "./chunk-DoFIUO2V.js";
 import { b as resolveStaticBindings, g as emptyViewerOnlyParams, h as emptyParamsNote, u as unresolvedNote } from "./chunk-ZM2Fbxze.js";
@@ -718,7 +718,7 @@ function releaseAppTool(client) {
       destructiveHint: true,
       openWorldHint: false
     },
-    description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. The operation publishes a draft when necessary and promotes it one environment at a time until it reaches production when the workspace requires it, then releases only that exact version. It is safe to retry after a transient preparation failure. Returns a verified current_version_id after reading the app back.",
+    description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. Checks permissions and applicable review and security policies before saving or promoting. Promotes the selected version one environment at a time to production when the workspace requires it, then releases only that exact version. On failure it preserves completed steps and reports the verified state. Returns a verified current_version_id after reading the app back.",
     inputSchema: {
       app_id: external_exports.string().uuid(),
       version_id: external_exports.string().uuid(),
@@ -729,6 +729,15 @@ function releaseAppTool(client) {
       try {
         return ok(await client.releaseApp(args.app_id, args.version_id));
       } catch (err) {
+        if (err instanceof ReleaseScanTimeout) {
+          return { ...ok({ error: {
+            code: "release_scan_timeout",
+            app_id: args.app_id,
+            version_id: args.version_id,
+            environment: err.environment,
+            message: err.message
+          } }), isError: true };
+        }
         return fail(err);
       }
     }
