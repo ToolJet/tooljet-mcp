@@ -871,6 +871,12 @@ export function condenseErrorBody(detail: string, limit = 600): string {
   return text.length > limit ? `${text.slice(0, limit)} …[${text.length - limit} more chars]` : text;
 }
 
+export class ReleaseScanTimeout extends Error {
+  constructor(public readonly environment: string) {
+    super(`The version was saved in ${environment}. The release stopped while waiting for the security scan. Once the Security panel shows it passed, retry the release with this saved version.`);
+  }
+}
+
 export class ToolJetHttpError extends Error {
   constructor(
     public readonly status: number,
@@ -1890,6 +1896,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const env = path.find(env => env.id === observed?.environmentId);
       if (!observed || !env) {
         throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
+      }
+      if (error instanceof SavedBuildScanRequired && observed.status === 'PUBLISHED') {
+        throw new ReleaseScanTimeout(env.name);
       }
       const nextAction = env.id === destination.id ? 'release' : 'promote';
       let guidance = 'You can continue editing this draft.';

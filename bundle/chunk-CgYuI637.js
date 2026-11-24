@@ -1582,6 +1582,13 @@ function condenseErrorBody(detail, limit = 600) {
   }
   return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
 }
+var ReleaseScanTimeout = class extends Error {
+  environment;
+  constructor(environment) {
+    super(`The version was saved in ${environment}. The release stopped while waiting for the security scan. Once the Security panel shows it passed, retry the release with this saved version.`);
+    this.environment = environment;
+  }
+};
 var ToolJetHttpError = class extends Error {
   status;
   method;
@@ -2472,6 +2479,9 @@ function createClient(auth, config) {
       const env2 = path.find((env3) => env3.id === observed?.environmentId);
       if (!observed || !env2) {
         throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
+      }
+      if (error instanceof SavedBuildScanRequired && observed.status === "PUBLISHED") {
+        throw new ReleaseScanTimeout(env2.name);
       }
       const nextAction = env2.id === destination.id ? "release" : "promote";
       let guidance = "You can continue editing this draft.";
@@ -4361,6 +4371,7 @@ export {
   ALLOWED_API_ORIGINS_VAR as A,
   BASE_URL_HEADER as B,
   PartialWriteError as P,
+  ReleaseScanTimeout as R,
   SESSION_TOKEN_HEADER as S,
   TOOLJET_DB_DATA_TYPES as T,
   WORKSPACE_ACCESS_KEYS as W,

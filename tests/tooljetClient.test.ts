@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { releaseAppTool } from '../src/tools/releaseApp.js';
 import { PartialWriteError, createClient } from '../src/tooljetClient.js';
 import type { Config } from '../src/config.js';
 import type { Auth } from '../src/auth.js';
@@ -472,9 +473,16 @@ describe('createClient', () => {
       try {
         const app = server('DRAFT', ['build', 'live']);
         app.scanRefusals.push(...Array(25).fill('saved_build_scan_required'));
-        const stopped = expect(app.run()).rejects.toThrow(/Security panel.*saved in build/);
+        const stopped = releaseAppTool(createClient(auth, config)).handler({
+          app_id: 'garden', version_id: 'harvest', confirm: true,
+        });
         await vi.advanceTimersByTimeAsync(30_000);
-        await stopped;
+        const result = await stopped;
+        expect(result.isError).toBe(true);
+        expect(JSON.parse(result.content[0].text).error).toEqual({
+          code: 'release_scan_timeout', app_id: 'garden', version_id: 'harvest', environment: 'build',
+          message: expect.stringMatching(/saved in build.*Security panel.*retry/i),
+        });
         expect(app.writes).toEqual(['save']);
       } finally {
         vi.useRealTimers();

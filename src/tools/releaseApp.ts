@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ToolJetClient } from '../tooljetClient.js';
+import { ReleaseScanTimeout, type ToolJetClient } from '../tooljetClient.js';
 import { fail, ok, type ToolDef } from './types.js';
 
 export function releaseAppTool(client: ToolJetClient): ToolDef {
@@ -27,6 +27,12 @@ export function releaseAppTool(client: ToolJetClient): ToolDef {
       try {
         return ok(await client.releaseApp(args.app_id, args.version_id));
       } catch (err) {
+        if (err instanceof ReleaseScanTimeout) {
+          return { ...ok({ error: {
+            code: 'release_scan_timeout', app_id: args.app_id, version_id: args.version_id,
+            environment: err.environment, message: err.message,
+          } }), isError: true };
+        }
         return fail(err);
       }
     },
