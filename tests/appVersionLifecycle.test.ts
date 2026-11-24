@@ -72,13 +72,16 @@ describe('app version lifecycle', () => {
     expect(fetch.mock.calls).toHaveLength(1);
   });
   it('keeps releasing a named draft version with the exact requested id', async () => {
+    let status = 'DRAFT';
     const fetch = vi.fn(async (path: string, options?: RequestInit) => {
       if (path.startsWith('/api/apps/garden/versions')) {
-        const preflight = path.includes('?releasePreflightFor=');
-        return Response.json({ versions: [{ id: 'snapshot', status: preflight ? 'DRAFT' : 'PUBLISHED', version_type: 'version', currentEnvironmentId: 'dev' }],
+        return Response.json({ versions: [{ id: 'snapshot', status, version_type: 'version', currentEnvironmentId: 'dev' }],
           release_preflight: { version_id: 'snapshot', environment_path: [{ id: 'dev', name: 'development' }] } });
       }
-      if (options?.method === 'PUT') return new Response(null, { status: 204 });
+      if (options?.method === 'PUT') {
+        if (path.endsWith('/versions/snapshot')) status = 'PUBLISHED';
+        return new Response(null, { status: 204 });
+      }
       return Response.json({ current_version_id: 'snapshot' });
     });
     const client = createClient({ authedFetch: fetch } as unknown as Auth, {

@@ -369,7 +369,11 @@ describe('createClient', () => {
     function server(initial: 'DRAFT' | 'PUBLISHED', path: string[], deny?: string) {
       const state = { status: initial, environment: path[0], live: 'previous' };
       const writes: string[] = [];
+      const scanRefusals: string[] = [];
       auth.authedFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url === preflight && state.status === 'PUBLISHED' && scanRefusals.length) {
+          return Response.json({ reason: scanRefusals.shift(), message: 'Package review required' }, { status: 403 });
+        }
         const row = { id: 'harvest', status: state.status, current_environment_id: state.environment };
         if (url === preflight) return Response.json({ versions: [row], release_preflight: {
           version_id: row.id, environment_path: path.map(id => ({ id, name: id })),
@@ -399,7 +403,7 @@ describe('createClient', () => {
         } else throw new Error('Unexpected write: ' + url);
         return new Response(null, { status: 204 });
       });
-      return { state, writes, run: () => createClient(auth, config).releaseApp('garden', 'harvest') };
+      return { state, writes, scanRefusals, run: () => createClient(auth, config).releaseApp('garden', 'harvest') };
     }
 
     it('stops before saving and reports the preflight denial', async () => {
@@ -419,7 +423,7 @@ describe('createClient', () => {
     );
     it('refuses an older server that ignores preflight before writing', async () => {
       auth.authedFetch.mockResolvedValue(Response.json({ versions: [{ id: 'harvest', status: 'DRAFT' }] }));
-      await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('No changes were made');
+      await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('could not confirm release permissions');
       expect(auth.authedFetch.mock.calls).toEqual([[preflight]]);
     });
     it.each([
@@ -441,6 +445,40 @@ describe('createClient', () => {
       await expect(app.run()).rejects.toThrow(`saved in ${environment}. ${retry} from ${environment}, or use the version menu to ${next}`);
       expect(app.state).toEqual({ status: 'PUBLISHED', environment, live: 'previous' });
       expect(app.writes.filter(write => write === 'release')).toHaveLength(deny === 'release' ? 1 : 0);
+    });
+    it.each([['build'], ['build', 'preview', 'live']])('waits for the saved scan before advancing from %s', async (...path) => {
+      vi.useFakeTimers();
+      try {
+        const app = server('DRAFT', path);
+        app.scanRefusals.push('saved_build_scan_required', 'saved_build_scan_required');
+        const finished = app.run();
+        await vi.advanceTimersByTimeAsync(2_000);
+        expect(app.writes).toEqual(['save']);
+        await vi.advanceTimersByTimeAsync(2_000);
+        await expect(finished).resolves.toMatchObject({ released: true });
+        expect(app.writes).toEqual(['save', ...path.slice(1).map(env => 'promote ' + env), 'release']);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+    it('reports a blocking scan and the saved environment without attempting promotion', async () => {
+      const app = server('DRAFT', ['build', 'live']);
+      app.scanRefusals.push('security_gate');
+      await expect(app.run()).rejects.toThrow('Package review required. The version is saved in build.');
+      expect(app.writes).toEqual(['save']);
+    });
+    it('stops waiting for a missing scan and reports the saved environment', async () => {
+      vi.useFakeTimers();
+      try {
+        const app = server('DRAFT', ['build', 'live']);
+        app.scanRefusals.push(...Array(25).fill('saved_build_scan_required'));
+        const stopped = expect(app.run()).rejects.toThrow(/Security panel.*saved in build/);
+        await vi.advanceTimersByTimeAsync(30_000);
+        await stopped;
+        expect(app.writes).toEqual(['save']);
+      } finally {
+        vi.useRealTimers();
+      }
     });
     it('leaves a rejected save editable', async () => {
       const app = server('DRAFT', ['development', 'production'], 'save');

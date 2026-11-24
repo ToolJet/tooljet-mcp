@@ -1782,7 +1782,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
     async function readVersion(preflight = false) {
       const query = preflight ? `?releasePreflightFor=${encodeURIComponent(versionId)}` : '';
       const response = await auth.authedFetch(`${appPath}/versions${query}`);
-      await assertOk(response, preflight ? 'releaseApp.checkPermissions' : 'releaseApp.readVersion');
+      await assertReleaseResponse(response, preflight ? 'releaseApp.checkPermissions' : 'releaseApp.readVersion');
       const body = await response.json();
       const row = body.versions?.find((v: Record<string, unknown>) => v.id === versionId);
       if (!row) throw new Error(`Version ${versionId} was not found in app ${appId}.`);
@@ -1798,19 +1798,49 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
         plan: body.release_preflight,
       };
     }
-    const initial = await readVersion(true);
-    const plan = z.object({
-      version_id: z.literal(versionId),
-      environment_path: z.array(z.object({ id: z.string().min(1), name: z.string().min(1) })).min(1),
-    }).safeParse(initial.plan);
-    if (!plan.success) {
-      throw new Error('ToolJet could not confirm release permissions. No changes were made. Use the version menu or update the ToolJet server to a version with release preflight support.');
+    // Only this explicit preflight reason may wait. A rejected write is never replayed.
+    class SavedBuildScanRequired extends Error {}
+    async function assertReleaseResponse(response: Response, action: string) {
+      if (response.status === 403) {
+        const refusal = await response.clone().json().catch(() => null);
+        if (refusal?.reason === 'saved_build_scan_required' && action === 'releaseApp.checkPermissions') {
+          throw new SavedBuildScanRequired('The saved build needs a completed security scan. Check the Security panel.');
+        }
+        if (refusal?.reason === 'security_gate' && typeof refusal.message === 'string' && refusal.message.trim()) {
+          throw new Error(refusal.message);
+        }
+      }
+      await assertOk(response, action);
     }
-    const path = plan.data.environment_path;
+    async function readPlan() {
+      const version = await readVersion(true);
+      const plan = z.object({
+        version_id: z.literal(versionId),
+        environment_path: z.array(z.object({ id: z.string().min(1), name: z.string().min(1) })).min(1),
+      }).safeParse(version.plan);
+      if (!plan.success) {
+        throw new Error('ToolJet could not confirm release permissions. Use the version menu or update the ToolJet server to a version with release preflight support.');
+      }
+      const path = plan.data.environment_path;
+      if (path[0].id !== version.environmentId || new Set(path.map(env => env.id)).size !== path.length) {
+        throw new Error('Cannot verify the release path from the selected environment.');
+      }
+      return { ...version, path };
+    }
+    async function readPlanAfterSave() {
+      const deadline = Date.now() + 30_000;
+      for (;;) {
+        try {
+          return await readPlan();
+        } catch (error) {
+          if (!(error instanceof SavedBuildScanRequired) || Date.now() >= deadline) throw error;
+          await new Promise(resolve => setTimeout(resolve, Math.min(2_000, deadline - Date.now())));
+        }
+      }
+    }
+    const initial = await readPlan();
+    const path = initial.path;
     const destination = path[path.length - 1];
-    if (path[0].id !== initial.environmentId || new Set(path.map(env => env.id)).size !== path.length) {
-      throw new Error('Cannot verify the release path from the selected environment. No changes were made.');
-    }
     const publish = initial.status === 'DRAFT';
     const promoted: string[] = [];
     let releasing = false;
@@ -1822,12 +1852,15 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       const response = await auth.authedFetch(url, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
-      await assertOk(response, action);
+      await assertReleaseResponse(response, action);
     }
     try {
       if (publish) {
         await put(versionPath, { status: 'PUBLISHED' }, 'releaseApp.save');
-        const saved = await readVersion();
+        const saved = await readPlanAfterSave();
+        if (saved.path.length !== path.length || saved.path.some((env, i) => env.id !== path[i].id)) {
+          throw new Error('The release path changed after saving. Check the version menu before retrying.');
+        }
         if (saved.status !== 'PUBLISHED' || saved.environmentId !== initial.environmentId) {
           throw new Error('Could not verify the saved version in its original environment.');
         }
