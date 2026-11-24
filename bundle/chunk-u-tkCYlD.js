@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { c as codeCliProblem } from "./chunk-BegdSxrn.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, p as packDefaultDefinition, e as definition } from "./chunk-DsHerUO9.js";
-import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BrqxMLVS.js";
-import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-Z4CBDLNB.js";
-import { y as resolvePackSlot, O as resolveComponentLibrary, N as componentLibraryChoices, P as savedComponentLibrary, Q as checkedLibrarySelection, z as defaultPack, R as COMPONENT_PACK_DESCRIPTION } from "./chunk-BZWhmyFq.js";
-import { aC as external_exports, aQ as downgradeFlexForLibrary, aR as toLibraryComponent, aS as missingLibraryPins, aT as libraryTypeOf, aK as fail, aL as ok, aP as exposeActions } from "./chunk-CS6hDtiZ.js";
-import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CgSLCcEW.js";
+import { c as codeCliProblem } from "./chunk-CroQHJzZ.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, p as packDefaultDefinition, e as definition } from "./chunk-B_QQ_yEu.js";
+import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BSIUjP8l.js";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-D82B7yRZ.js";
+import { P as downgradeFlexForLibrary, n as resolvePackSlot, Q as resolveComponentLibrary, O as componentLibraryChoices, R as toLibraryComponent, S as missingLibraryPins, T as libraryTypeOf, U as savedComponentLibrary, V as checkedLibrarySelection, t as defaultPack, W as COMPONENT_PACK_DESCRIPTION } from "./chunk-DoFIUO2V.js";
+import { a as assertPersistableQueryToggles, r as runpyReturnError, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-oJ9NoDkD.js";
+import { ax as external_exports, ay as fail, az as ok, aA as exposeActions } from "./chunk-BjPiAByC.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, existsSync } from "node:fs";
@@ -3453,6 +3453,11 @@ function createClient(auth, config) {
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "runpy") {
+      const message = runpyReturnError(params.options.code);
+      if (message)
+        throw new Error(message);
+    }
     if (query2.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };

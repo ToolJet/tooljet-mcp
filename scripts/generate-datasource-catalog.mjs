@@ -338,7 +338,9 @@ function fallbackResponse(kind, type, contract) {
       type: 'unknown',
       status: 'runtime-dependent',
       source: 'user-code',
-      description: 'The query data is the value returned by user-authored code; inspect a safe successful run before binding nested fields.',
+      description: kind === 'runpy'
+        ? 'Use a final expression to produce query data. Inspect a safe successful run before binding nested fields.'
+        : 'The query data is the value returned by user-authored code; inspect a safe successful run before binding nested fields.',
     };
   }
 
@@ -598,6 +600,7 @@ const tooljetContracts = {
   })], ['operation', 'sql_execution.sqlQuery'], { operation: 'sql_execution' }),
 };
 
+const runpyCodeDescription = 'Python module with its original line breaks and indentation. Use a final expression for the query result; return is only valid inside a function.';
 const staticSchemas = {
   workflows: {
     kind: 'workflows', name: 'Workflows', type: 'static',
@@ -637,8 +640,8 @@ const staticSchemas = {
   runpy: {
     kind: 'runpy', name: 'Run Python', type: 'static', defaults: { code: '' }, operations: [],
     operationSelection: { mode: 'single', description: 'This kind has a single query form; author it against the `default` contract.' },
-    contracts: { default: oneVariant('default', [field('code', 'string')], ['code']) },
-    properties: { code: { type: 'string', description: 'Python body. Return the query result.' } },
+    contracts: { default: oneVariant('default', [field('code', 'string', { description: runpyCodeDescription })], ['code']) },
+    properties: { code: { type: 'string', description: runpyCodeDescription } },
     introspectionMethods: [], supportsTestConnection: false, sources: [{ collection: 'static', package: 'runpy' }],
   },
   tooljetdb: {

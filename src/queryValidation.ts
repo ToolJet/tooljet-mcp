@@ -1,3 +1,4 @@
+import { runpyReturnError } from './runpyReturn.js';
 import { normalizeQueryToggles, queryToggleIssues, staticToggle } from './queryToggles.js';
 import { parse as babelParse } from '@babel/parser';
 import { hubspotQueryIssues } from './hubspotQuery.js';
@@ -565,6 +566,10 @@ export function validateQueryOptions(kind: string, options: Record<string, unkno
   const conditionalWrite = conditionalWriteWarning(kind, options);
   if (conditionalWrite) warnings.push({ code: 'conditional_write_result', path: 'update_rows', message: conditionalWrite });
   if (kind === 'mongodb') errors.push(...mongoArrayReplacementIssues(options));
+  if (kind === 'runpy') {
+    const message = runpyReturnError(options.code);
+    if (message) errors.push({ code: 'runpy_return_outside_function', path: 'code', message });
+  }
   if (executionContext === 'app' && kind === 'runjs' && typeof options.code === 'string' && options.code.trim()) {
     const syntax = runjsSyntaxError(options.code);
     if (syntax) {
