@@ -1,3 +1,4 @@
+import { runpyReturnError } from './runpyReturn.js';
 import { resolveWorkflowReference } from './workflowReference.js';
 import { componentRef, indexComponentReferences } from './componentReferences.js';
 import { assertAiDatasource, isSampleDatasource } from './datasourcePolicy.js';
@@ -1785,9 +1786,9 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function releaseApp(appId: string, versionId: string): Promise<ReleaseAppResult> {
     const appPath = `/api/apps/${encodeURIComponent(appId)}`;
     const versionPath = `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`;
-    async function readVersion(preflight = false) {
+    async function readVersion(preflight = false, signal?: AbortSignal) {
       const query = preflight ? `?releasePreflightFor=${encodeURIComponent(versionId)}` : '';
-      const response = await auth.authedFetch(`${appPath}/versions${query}`);
+      const response = await auth.authedFetch(`${appPath}/versions${query}`, { signal });
       await assertReleaseResponse(response, preflight ? 'releaseApp.checkPermissions' : 'releaseApp.readVersion');
       const body = await response.json();
       const row = body.versions?.find((v: Record<string, unknown>) => v.id === versionId);
@@ -1818,8 +1819,8 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       }
       await assertOk(response, action);
     }
-    async function readPlan() {
-      const version = await readVersion(true);
+    async function readPlan(signal?: AbortSignal) {
+      const version = await readVersion(true, signal);
       const plan = z.object({
         version_id: z.literal(versionId),
         environment_path: z.array(z.object({ id: z.string().min(1), name: z.string().min(1) })).min(1),
@@ -1834,14 +1835,29 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
       return { ...version, path };
     }
     async function readPlanAfterSave() {
-      const deadline = Date.now() + 30_000;
-      for (;;) {
-        try {
-          return await readPlan();
-        } catch (error) {
-          if (!(error instanceof SavedBuildScanRequired) || Date.now() >= deadline) throw error;
-          await new Promise(resolve => setTimeout(resolve, Math.min(2_000, deadline - Date.now())));
+      const controller = new AbortController();
+      let timeoutError: Error = new Error('Timed out checking the saved release plan.');
+      let timer: ReturnType<typeof setTimeout>;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort(timeoutError);
+          reject(timeoutError);
+        }, 30_000);
+      });
+      try {
+        for (;;) {
+          controller.signal.throwIfAborted();
+          try {
+            return await Promise.race([readPlan(controller.signal), timeout]);
+          } catch (error) {
+            controller.signal.throwIfAborted();
+            if (!(error instanceof SavedBuildScanRequired)) throw error;
+            timeoutError = error;
+            await Promise.race([new Promise(resolve => setTimeout(resolve, 2_000)), timeout]);
+          }
         }
+      } finally {
+        clearTimeout(timer!);
       }
     }
     const initial = await readPlan();
@@ -1892,7 +1908,7 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
           throw new Error(`${String(error)}. Could not verify which version is live. Check the version menu before retrying.`);
         }
       }
-      const observed = await readVersion().catch(() => undefined);
+      const observed = await readVersion(false, AbortSignal.timeout(10_000)).catch(() => undefined);
       const env = path.find(env => env.id === observed?.environmentId);
       if (!observed || !env) {
         throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
@@ -3174,6 +3190,11 @@ export function createClient(auth: Auth, config: Config): ToolJetClient {
   async function updateQuery(params: UpdateQueryParams): Promise<{ query_id: string }> {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const query = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    // A bare-ID update only learns the saved kind at this point.
+    if (query.kind === 'runpy') {
+      const message = runpyReturnError(params.options.code);
+      if (message) throw new Error(message);
+    }
     if (query.kind === 'workflows') {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };

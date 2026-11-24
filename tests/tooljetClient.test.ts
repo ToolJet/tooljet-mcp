@@ -410,7 +410,7 @@ describe('createClient', () => {
     it('stops before saving and reports the preflight denial', async () => {
       auth.authedFetch.mockResolvedValue(new Response('Approval required', { status: 403 }));
       await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('Approval required');
-      expect(auth.authedFetch.mock.calls).toEqual([[preflight]]);
+      expect(auth.authedFetch.mock.calls.map(([url]) => url)).toEqual([preflight]);
     });
     it.each([['staging', 'production'], ['development', 'development']])(
       'rejects an inconsistent path %s -> %s before writing', async (start, end) => {
@@ -419,13 +419,13 @@ describe('createClient', () => {
           release_preflight: { version_id: 'harvest', environment_path: [start, end].map(id => ({ id, name: id })) },
         }));
         await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('Cannot verify the release path');
-        expect(auth.authedFetch.mock.calls).toEqual([[preflight]]);
+        expect(auth.authedFetch.mock.calls.map(([url]) => url)).toEqual([preflight]);
       }
     );
     it('refuses an older server that ignores preflight before writing', async () => {
       auth.authedFetch.mockResolvedValue(Response.json({ versions: [{ id: 'harvest', status: 'DRAFT' }] }));
       await expect(createClient(auth, config).releaseApp('garden', 'harvest')).rejects.toThrow('could not confirm release permissions');
-      expect(auth.authedFetch.mock.calls).toEqual([[preflight]]);
+      expect(auth.authedFetch.mock.calls.map(([url]) => url)).toEqual([preflight]);
     });
     it.each([
       { initial: 'PUBLISHED' as const, path: ['production'], writes: ['release'] },
@@ -483,6 +483,30 @@ describe('createClient', () => {
           code: 'release_scan_timeout', app_id: 'garden', version_id: 'harvest', environment: 'build',
           message: expect.stringMatching(/saved in build.*Security panel.*retry/i),
         });
+        expect(app.writes).toEqual(['save']);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+    it('stops a stalled preflight read at the scan deadline without issuing another write', async () => {
+      vi.useFakeTimers();
+      try {
+        const app = server('DRAFT', ['build', 'live']);
+        app.scanRefusals.push('saved_build_scan_required');
+        const respond = auth.authedFetch.getMockImplementation()!;
+        let pendingRead: AbortSignal | undefined;
+        auth.authedFetch.mockImplementation((url: string, init?: RequestInit) => {
+          if (url === preflight && app.state.status === 'PUBLISHED' && !app.scanRefusals.length) {
+            pendingRead = init?.signal ?? undefined;
+            return new Promise<Response>((_, reject) => pendingRead?.addEventListener('abort', () => reject(pendingRead?.reason)));
+          }
+          return respond(url, init);
+        });
+        const stopped = app.run();
+        const outcome = expect(stopped).rejects.toThrow(/saved in build.*security scan/i);
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(pendingRead?.aborted).toBe(true);
+        await outcome;
         expect(app.writes).toEqual(['save']);
       } finally {
         vi.useRealTimers();

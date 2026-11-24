@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { c as codeCliProblem } from "./chunk-BegdSxrn.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, p as packDefaultDefinition, e as definition } from "./chunk-DsHerUO9.js";
-import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BrqxMLVS.js";
-import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-Z4CBDLNB.js";
-import { y as resolvePackSlot, O as resolveComponentLibrary, N as componentLibraryChoices, P as savedComponentLibrary, Q as checkedLibrarySelection, z as defaultPack, R as COMPONENT_PACK_DESCRIPTION } from "./chunk-BZWhmyFq.js";
-import { aC as external_exports, aQ as downgradeFlexForLibrary, aR as toLibraryComponent, aS as missingLibraryPins, aT as libraryTypeOf, aK as fail, aL as ok, aP as exposeActions } from "./chunk-CS6hDtiZ.js";
-import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CgSLCcEW.js";
+import { c as codeCliProblem } from "./chunk-CroQHJzZ.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, p as packDefaultDefinition, e as definition } from "./chunk-B_QQ_yEu.js";
+import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BSIUjP8l.js";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-D82B7yRZ.js";
+import { P as downgradeFlexForLibrary, n as resolvePackSlot, Q as resolveComponentLibrary, O as componentLibraryChoices, R as toLibraryComponent, S as missingLibraryPins, T as libraryTypeOf, U as savedComponentLibrary, V as checkedLibrarySelection, t as defaultPack, W as COMPONENT_PACK_DESCRIPTION } from "./chunk-DoFIUO2V.js";
+import { a as assertPersistableQueryToggles, r as runpyReturnError, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-oJ9NoDkD.js";
+import { ax as external_exports, ay as fail, az as ok, aA as exposeActions } from "./chunk-BjPiAByC.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, existsSync } from "node:fs";
@@ -2360,9 +2360,9 @@ function createClient(auth, config) {
   async function releaseApp(appId, versionId) {
     const appPath = `/api/apps/${encodeURIComponent(appId)}`;
     const versionPath = `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`;
-    async function readVersion(preflight = false) {
+    async function readVersion(preflight = false, signal) {
       const query2 = preflight ? `?releasePreflightFor=${encodeURIComponent(versionId)}` : "";
-      const response = await auth.authedFetch(`${appPath}/versions${query2}`);
+      const response = await auth.authedFetch(`${appPath}/versions${query2}`, { signal });
       await assertReleaseResponse(response, preflight ? "releaseApp.checkPermissions" : "releaseApp.readVersion");
       const body = await response.json();
       const row = body.versions?.find((v) => v.id === versionId);
@@ -2394,8 +2394,8 @@ function createClient(auth, config) {
       }
       await assertOk(response, action);
     }
-    async function readPlan() {
-      const version = await readVersion(true);
+    async function readPlan(signal) {
+      const version = await readVersion(true, signal);
       const plan = external_exports.object({
         version_id: external_exports.literal(versionId),
         environment_path: external_exports.array(external_exports.object({ id: external_exports.string().min(1), name: external_exports.string().min(1) })).min(1)
@@ -2410,15 +2410,30 @@ function createClient(auth, config) {
       return { ...version, path: path2 };
     }
     async function readPlanAfterSave() {
-      const deadline = Date.now() + 3e4;
-      for (; ; ) {
-        try {
-          return await readPlan();
-        } catch (error) {
-          if (!(error instanceof SavedBuildScanRequired) || Date.now() >= deadline)
-            throw error;
-          await new Promise((resolve2) => setTimeout(resolve2, Math.min(2e3, deadline - Date.now())));
+      const controller = new AbortController();
+      let timeoutError = new Error("Timed out checking the saved release plan.");
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort(timeoutError);
+          reject(timeoutError);
+        }, 3e4);
+      });
+      try {
+        for (; ; ) {
+          controller.signal.throwIfAborted();
+          try {
+            return await Promise.race([readPlan(controller.signal), timeout]);
+          } catch (error) {
+            controller.signal.throwIfAborted();
+            if (!(error instanceof SavedBuildScanRequired))
+              throw error;
+            timeoutError = error;
+            await Promise.race([new Promise((resolve2) => setTimeout(resolve2, 2e3)), timeout]);
+          }
         }
+      } finally {
+        clearTimeout(timer);
       }
     }
     const initial = await readPlan();
@@ -2475,7 +2490,7 @@ function createClient(auth, config) {
           throw new Error(`${String(error)}. Could not verify which version is live. Check the version menu before retrying.`);
         }
       }
-      const observed = await readVersion().catch(() => void 0);
+      const observed = await readVersion(false, AbortSignal.timeout(1e4)).catch(() => void 0);
       const env2 = path.find((env3) => env3.id === observed?.environmentId);
       if (!observed || !env2) {
         throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
@@ -3479,6 +3494,11 @@ function createClient(auth, config) {
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "runpy") {
+      const message = runpyReturnError(params.options.code);
+      if (message)
+        throw new Error(message);
+    }
     if (query2.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };

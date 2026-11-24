@@ -5776,7 +5776,8 @@
             "fields": {
               "code": {
                 "path": "code",
-                "type": "string"
+                "type": "string",
+                "description": "Python module with its original line breaks and indentation. Use a final expression for the query result; return is only valid inside a function."
               }
             },
             "required": [
@@ -5788,14 +5789,14 @@
           "type": "unknown",
           "status": "runtime-dependent",
           "source": "user-code",
-          "description": "The query data is the value returned by user-authored code; inspect a safe successful run before binding nested fields."
+          "description": "Use a final expression to produce query data. Inspect a safe successful run before binding nested fields."
         }
       }
     },
     "properties": {
       "code": {
         "type": "string",
-        "description": "Python body. Return the query result."
+        "description": "Python module with its original line breaks and indentation. Use a final expression for the query result; return is only valid inside a function."
       }
     },
     "introspectionMethods": [],
