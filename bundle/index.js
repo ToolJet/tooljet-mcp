@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, o as oauthHttpOptionsFromEnv, c as createOAuthHttpServer, S as StreamableHTTPServerTransport } from "./chunk-ClWEGgRr.js";
+import { b as buildServer, a as buildUnconfiguredServer, p as packsReady, o as oauthHttpOptionsFromEnv, c as createOAuthHttpServer, S as StreamableHTTPServerTransport } from "./chunk-C0E4Bvby.js";
 import "./chunk-B_QQ_yEu.js";
 import { x as allowedApiOrigins, A as ALLOWED_API_ORIGINS_VAR, y as identityFromHeaders, S as SESSION_TOKEN_HEADER, B as BASE_URL_HEADER, z as PAT_HEADER } from "./chunk-DPANHZWM.js";
 import { Z as JSONRPCMessageSchema } from "./chunk-Brb1f9hL.js";
