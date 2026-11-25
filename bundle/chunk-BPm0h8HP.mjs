@@ -1,5 +1,47 @@
 import { createRequire } from "node:module";
 createRequire(import.meta.url);
+function resolveRef(candidates, ref, kind, scope, describe2 = (candidate) => `${candidate.name ?? "(unnamed)"}=${candidate.id}`) {
+  const byId = candidates.find((candidate) => candidate.id === ref);
+  if (byId)
+    return { ok: true, target: byId };
+  const byName = candidates.filter((candidate) => candidate.name === ref);
+  if (byName.length === 1)
+    return { ok: true, target: byName[0] };
+  if (byName.length > 1) {
+    return {
+      ok: false,
+      error: `${kind} name "${ref}" is ambiguous ${scope} (${byName.length} share it). Pass the id instead: ${byName.map((candidate) => candidate.id).join(", ")}.`
+    };
+  }
+  const available = candidates.map(describe2).join(", ");
+  return {
+    ok: false,
+    // The "do not re-read" clause matters: the previous phrasing ("does not exist") invited exactly
+    // the re-read that caused the loop.
+    error: `No ${kind.toLowerCase()} with id or name "${ref}" ${scope}. Do not re-read \u2014 it currently holds: ${available || "(none)"}.`
+  };
+}
+createRequire(import.meta.url);
+var TableQuotaError = class extends Error {
+  code = "TJDB_TABLE_LIMIT_REACHED";
+  status = 451;
+  retryable = false;
+  constructor() {
+    super("The workspace has reached its ToolJet Database table limit. Stop creating tables. Ask the user to reuse existing tables, free table capacity, or increase the workspace allowance before continuing. Keep resources already created; do not delete tables automatically.");
+    this.name = "TableQuotaError";
+  }
+};
+function tableQuotaError(error) {
+  const seen = /* @__PURE__ */ new Set();
+  while (error instanceof Error && !seen.has(error)) {
+    if (error instanceof TableQuotaError)
+      return error;
+    seen.add(error);
+    error = error.cause;
+  }
+  return void 0;
+}
+createRequire(import.meta.url);
 var _a$1;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -6143,11 +6185,14 @@ export {
   $ZodCheckBigIntFormat as e2,
   $ZodAsyncError as e3,
   allProcessors as e4,
-  __commonJS as e5,
-  __require as e6,
-  __toESM as e7,
-  normalizeParams as e8,
-  defineLazy as e9,
+  tableQuotaError as e5,
+  __commonJS as e6,
+  __require as e7,
+  __toESM as e8,
+  resolveRef as e9,
+  TableQuotaError as ea,
+  normalizeParams as eb,
+  defineLazy as ec,
   _startsWith as f,
   _slugify as g,
   _size as h,

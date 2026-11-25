@@ -1,26 +1,28 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { N as inPackSet, O as listWorkspaceAppsTool, P as listWorkspaceFoldersTool, Q as listWorkspaceUsersTool, R as manageWorkspaceUsersTool, o as ok, f as fail, U as capabilityRequestSchema, V as getWorkflowCapabilities, W as lint, X as apply, Y as deleteNode, Z as editContractSchema, _ as generateEditContract, p as resolveStaticBindings, I as emptyViewerOnlyParams, J as emptyParamsNote, K as unresolvedNote, E as COMPONENT_FX_GUIDANCE, $ as workspaceUserActionTools, a0 as registerComponentSchemas, a as activePackSet, a1 as newPackSet, a2 as allComponentSchemas } from "./chunk-w14kofOC.mjs";
-import { s as strictEntry, F as FLEX_MIN_WIDTH_PX_DESCRIPTION, f as FLEX_GROW_DESCRIPTION, g as FLEX_WIDTH_PX_DESCRIPTION, j as FLEX_FILL_WIDTH_DESCRIPTION, k as codeAppScaffoldTool, l as codeAppReadFilesTool, o as codeAppWriteFilesTool, q as codeAppBuildTool, t as codeAppInstallTool, u as codeAppAddDependencyTool, v as getComponentCatalogTool, w as updateComponentsTool, x as noCodeIdentity, r as resolveRef, n as normalizeComponentSpec, m as mapKeyRefusal, d as appendedChildOrders, y as reparentAdditions, c as childOrderProperty, z as browserUserBindings, A as isCodeModeApp, B as browserUserMessage } from "./chunk-DRRtluDi.mjs";
-import { f as createClient, m as manageAppPermissionsTool, g as createAppTool, h as manageThemeTool, j as projectJavascriptRuntime, k as projectAppSettings, o as compactTheme, q as pageSettingProperties, v as validateTableBatch, r as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, s as appPermissionActionTools, u as workflowOperations, x as withBranchContext, y as registerPackDefinitions, z as branchIdFor } from "./chunk-d_W8P3vu.mjs";
-import { v as verifyPageRenderTool, l as listWorkspaceGroupsTool, m as manageWorkspaceGroupsTool, i as inspectDatasourceSchemaTool, d as datasourceMetadataTools, a as autoReadPreflight, w as workspaceGroupActionTools } from "./chunk-C1F2Fxyy.mjs";
-import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-BQv8t8wl.mjs";
-import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk-s23ZUDq4.mjs";
-import { M as McpServer } from "./chunk-B1PFs3RC.mjs";
-import { $ as JSONRPCMessageSchema } from "./chunk-_owh2M2d.mjs";
-import "./chunk-B_5ytQOe.mjs";
-import { b0 as external_exports, b3 as specSchema, b9 as nodeSchema, b1 as nodeCatalog, b2 as validateGraph } from "./chunk-5U2_zDJi.mjs";
-import { D as pageIconSchema, c as componentSlotSchema, a as componentNameSchema, y as lintComponents, r as resolveParentRef, e as applyResolvedParent, j as introducedLintFindings, k as lintComponentSlots, G as lintRenderedGeometryBlocking, H as lintRenderedGeometryAdvisory, d as decodeComponentParent, f as isPackContainerType, g as resolvePackSlot, h as encodeComponentParent, l as lintComponentSpec, m as lintUnusableTextGeometry, I as lintNestedContainerWidths, o as lintStandardSingleLineInputHeight, p as lintTextGeometry, q as lintRenderedGeometry, J as FORM_SCHEMA_FIELD_TYPE_SET, K as SAFE_GENERATED_FORM_FIELD_TYPE_SET, L as packSlotsFromManifest, M as describePackSlots } from "./chunk-_cASSUa6.mjs";
-import { I as checkedLibrarySelection, H as savedComponentLibrary, J as COMPONENT_PACK_DESCRIPTION, M as verifyLibrarySelection, N as registerLibraryPacks } from "./chunk-DGkwZJJU.mjs";
-import "./chunk-Ch_tIM7j.mjs";
-import "./chunk-Dyby1nZn.mjs";
-import "./chunk-DcxxRLvp.mjs";
-import { b as readCatalogBytes } from "./chunk-CyEU6e6J.mjs";
-import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-D7K0V5QF.mjs";
-import "./chunk-GAqkxb6R.mjs";
-import "./chunk-I3vl7cMJ.mjs";
-import "./chunk-CAhinUzv.mjs";
-import "./chunk-FecuCL96.mjs";
+import { s as strictEntry, k as specSchema, l as nodeSchema, o as listWorkspaceAppsTool, q as listWorkspaceFoldersTool, r as listWorkspaceUsersTool, t as manageWorkspaceUsersTool, u as inspectDatasourceSchemaTool, v as getComponentCatalogTool, w as updateComponentsTool, x as updateLayoutTool, y as datasourceMetadataTools, z as nodeCatalog, A as capabilityRequestSchema, B as getWorkflowCapabilities, D as lint, E as apply, G as deleteNode, H as validateGraph, I as editContractSchema, J as generateEditContract, n as normalizeComponentSpec, m as mapKeyRefusal, C as COMPONENT_FX_GUIDANCE, K as workspaceUserActionTools } from "./chunk-Doi2Oo0R.mjs";
+import { f as createClient, g as createAppTool, m as manageThemeTool, R as ReleaseScanTimeout, h as projectJavascriptRuntime, j as projectAppSettings, k as compactTheme, o as pageSettingProperties, v as validateTableBatch, q as ToolJetHttpError, l as literalCanvasColor, P as PartialWriteError, t as themeActionTools, r as workflowOperations, s as withBranchContext, u as registerPackDefinitions, x as branchIdFor } from "./chunk-B82rbE9M.mjs";
+import { v as verifyPageRenderTool, m as manageAppPermissionsTool, l as listWorkspaceGroupsTool, b as manageWorkspaceGroupsTool, a as autoReadPreflight, w as workspaceGroupActionTools, c as appPermissionActionTools } from "./chunk-R7sr9Lac.mjs";
+import { a as codeAppScaffoldTool, b as codeAppReadFilesTool, d as codeAppWriteFilesTool, e as codeAppBuildTool, f as codeAppInstallTool, g as codeAppAddDependencyTool, n as noCodeIdentity, h as browserUserBindings, i as isCodeModeApp, j as browserUserMessage } from "./chunk-Dsfx-2OP.mjs";
+import { d as dbColumnTypeSchema, c as componentInputSchema, l as lintAppSpecTool, a as applyAppPhaseTool, r as runQueryTool, b as renameAppTool, p as plannedTableSchema, v as validatePersistedAppSummary, e as libraryPinErrors, i as inspectUpdateCompatibility, n as normalizePlanBindingAliases, f as containsComponentBinding, g as runUnattended, q as queryResultBindingHint, h as failureRecovery, j as failureVerification, s as schemaNameHint, k as redactRunResult, m as capUnattendedOutput, o as redactQueryText, t as prepareComponentBatch } from "./chunk-D0uudYts.mjs";
+import { g as containsExactValue, a as prepareQueryOptionsForWrite, h as containsNamedBinding, c as normalizePlannedLayouts, d as materializeRequiredDefaultChildren, v as validateEvents, e as expandQueryLifecycles, b as persistedEventSpecs, i as persistedEventIds } from "./chunk--QaKMNLS.mjs";
+import { e9 as resolveRef } from "./chunk-BPm0h8HP.mjs";
+import { aC as external_exports, aT as inPackSet, aL as ok, aK as fail, aU as registerComponentSchemas, aV as registerLibraryPacks, aR as activePackSet, aW as newPackSet, aX as readCatalogBytes, aY as allComponentSchemas } from "./chunk-Cd9iyktb.mjs";
+import { M as McpServer } from "./chunk-BGtHtdtb.mjs";
+import "./chunk-tVBz_nCS.mjs";
+import "./chunk-BeggNSyT.mjs";
+import { N as JSONRPCMessageSchema } from "./chunk-PuQ-Yfgv.mjs";
+import { E as pageIconSchema, q as componentNameSchema, z as lintComponents, r as resolveParentRef, a as applyResolvedParent, f as introducedLintFindings, l as lintComponentSlots, H as lintRenderedGeometryBlocking, I as lintRenderedGeometryAdvisory, d as decodeComponentParent, J as FORM_SCHEMA_FIELD_TYPE_SET, K as SAFE_GENERATED_FORM_FIELD_TYPE_SET, L as packSlotsFromManifest, M as describePackSlots } from "./chunk-BaIomYAg.mjs";
+import { x as checkedLibrarySelection, w as savedComponentLibrary, y as COMPONENT_PACK_DESCRIPTION, A as verifyLibrarySelection } from "./chunk-BnOoNdan.mjs";
+import "./chunk-CKmFvmZ4.mjs";
+import { c as resolveStaticBindings, h as emptyViewerOnlyParams, i as emptyParamsNote, u as unresolvedNote } from "./chunk-C9X9Iy8K.mjs";
+import "./chunk-DdyAhmbE.mjs";
+import { k as connectableDatasourceNames, m as getDatasourceCatalog, n as selectDatasourceQuerySchema, g as getDatasourceQuerySchema } from "./chunk-vVHapysk.mjs";
+import "./chunk-CaQYvw_C.mjs";
+import "./chunk-CqxvRAo0.mjs";
+import "./chunk-De9PKQf4.mjs";
+import "./chunk-CWdd2Ug0.mjs";
+import "./chunk-C-pixZIo.mjs";
 import process2 from "node:process";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, appendFile } from "node:fs/promises";
@@ -28,13 +30,13 @@ import { resolve, dirname, basename, extname, join } from "node:path";
 import { statSync, accessSync, constants } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import "node:vm";
 import "node:util";
-import "node:child_process";
 import "node:os";
 import "node:http";
 import "node:dns/promises";
 import "node:net";
-import "node:vm";
+import "node:child_process";
 createRequire(import.meta.url);
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 var ReadBuffer = class {
@@ -873,7 +875,7 @@ function releaseAppTool(client) {
       destructiveHint: true,
       openWorldHint: false
     },
-    description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. The operation publishes a draft when necessary and promotes it one environment at a time until it reaches production when the workspace requires it, then releases only that exact version. It is safe to retry after a transient preparation failure. Returns a verified current_version_id after reading the app back.",
+    description: "Release a specific ToolJet app version so it becomes the app's live released version. Use only when the user explicitly asked to release or publish the app, and pass confirm:true. Checks permissions and applicable review and security policies before saving or promoting. Promotes the selected version one environment at a time to production when the workspace requires it, then releases only that exact version. On failure it preserves completed steps and reports the verified state. Returns a verified current_version_id after reading the app back.",
     inputSchema: {
       app_id: external_exports.string().uuid(),
       version_id: external_exports.string().uuid(),
@@ -884,6 +886,15 @@ function releaseAppTool(client) {
       try {
         return ok(await client.releaseApp(args.app_id, args.version_id));
       } catch (err) {
+        if (err instanceof ReleaseScanTimeout) {
+          return { ...ok({ error: {
+            code: "release_scan_timeout",
+            app_id: args.app_id,
+            version_id: args.version_id,
+            environment: err.environment,
+            message: err.message
+          } }), isError: true };
+        }
         return fail(err);
       }
     }
@@ -2425,9 +2436,9 @@ function stripLayoutTimestamps(component) {
   const layouts = component.layouts;
   if (!layouts || typeof layouts !== "object")
     return;
-  for (const rect2 of Object.values(layouts)) {
-    if (rect2 && typeof rect2 === "object")
-      delete rect2.updatedAt;
+  for (const rect of Object.values(layouts)) {
+    if (rect && typeof rect === "object")
+      delete rect.updatedAt;
   }
 }
 function matches(value, accepted) {
@@ -3257,207 +3268,6 @@ function deleteComponentsTool(client) {
           component_names: targets.map((component) => component.name).filter(Boolean),
           source_events_deleted: sourceEventsDeleted
         });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
-}
-var rect = external_exports.object({
-  top: external_exports.number(),
-  left: external_exports.number(),
-  width: external_exports.number(),
-  height: external_exports.number(),
-  fillWidth: external_exports.boolean().optional().describe(FLEX_FILL_WIDTH_DESCRIPTION),
-  widthPx: external_exports.number().positive().optional().describe(FLEX_WIDTH_PX_DESCRIPTION),
-  grow: external_exports.number().positive().optional().describe(FLEX_GROW_DESCRIPTION),
-  minWidthPx: external_exports.number().nonnegative().optional().describe(FLEX_MIN_WIDTH_PX_DESCRIPTION)
-});
-var RECT_KEYS = /* @__PURE__ */ new Set(["top", "left", "width", "height"]);
-var layoutEntrySchema = strictEntry({
-  component_id: external_exports.string(),
-  desktop: rect.optional(),
-  mobile: rect.optional(),
-  parent: external_exports.string().optional(),
-  slot_name: componentSlotSchema.optional()
-}, (key) => {
-  if (RECT_KEYS.has(key)) {
-    return `Layout entry key "${key}" must be nested under desktop and/or mobile (e.g. { component_id, desktop: { top, left, width, height } }).`;
-  }
-  if (key === "layout" || key === "layouts") {
-    return `Layout entry key "${key}" is not accepted; put the rect directly under desktop and/or mobile on the entry.`;
-  }
-  if (key === "definition" || key === "properties" || key === "styles") {
-    return `Layout entry key "${key}" is not accepted by update_layout; edit component values with update_components.`;
-  }
-  return `Unknown layout entry key "${key}"; accepted keys are component_id, desktop, mobile, parent, slot_name.`;
-});
-function updateLayoutTool(client) {
-  return {
-    name: "update_layout",
-    title: "Update Layout",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: "Move / resize existing components (batch) without touching their properties. `left`/`width` are in the immediate parent canvas's own 43-column grid, including nested containers; `top`/`height` are pixels. Full rows use width 43, independent of the parent outer width. Container/Form/modal insets may use left 2, width 39; grid-mode Listview full rows use left 0, width 43. Provide desktop and/or mobile per component. Use this to fix overlaps or reflow a page. Set `parent` to reparent; use `slot_name` (header/body/footer) for native ModalV2/Form/Container regions or modal for Kanban card-click content. `slot_name` alone keeps the current parent. A FlexContainer child takes its width from fillWidth/widthPx, not width/left; a component reparented into a FlexContainer is appended to its childOrder.",
-    inputSchema: {
-      app_id: external_exports.string(),
-      version_id: external_exports.string(),
-      page_id: external_exports.string(),
-      layouts: external_exports.array(layoutEntrySchema).min(1)
-    },
-    async handler(args) {
-      try {
-        const summary = await client.getAppSummary(args.app_id);
-        const page = summary.pages.find((candidate) => candidate.id === args.page_id);
-        if (!page)
-          return fail(new Error(`Page "${args.page_id}" does not exist in app "${args.app_id}".`));
-        const components = new Map(page.components.map((component) => [component.id, component]));
-        const layoutWarnings = [];
-        const resolveErrors = [];
-        const resolvedIds = /* @__PURE__ */ new Map();
-        for (const layout of args.layouts) {
-          if (!layout.desktop && !layout.mobile && layout.parent === void 0 && layout.slot_name === void 0) {
-            resolveErrors.push(`Component "${layout.component_id}": nothing to update. Provide desktop and/or mobile rects, or a parent/slot_name change.`);
-            continue;
-          }
-          if (resolvedIds.has(layout.component_id))
-            continue;
-          const resolution = resolveRef(page.components, layout.component_id, "Component", `on page "${args.page_id}"`);
-          if (!resolution.ok) {
-            resolveErrors.push(resolution.error);
-            continue;
-          }
-          resolvedIds.set(layout.component_id, resolution.target.id);
-          if (resolution.warning)
-            layoutWarnings.push(resolution.warning);
-        }
-        if (resolveErrors.length)
-          return fail(new Error(resolveErrors.join(" ")));
-        args = {
-          ...args,
-          layouts: args.layouts.map((layout) => ({
-            ...layout,
-            component_id: resolvedIds.get(layout.component_id) ?? layout.component_id
-          }))
-        };
-        const rootSlotWarnings = [];
-        const parentErrors = [];
-        const resolvedLayouts = args.layouts.map((layout) => {
-          const current = components.get(layout.component_id);
-          let parent = layout.parent;
-          let slot_name = layout.slot_name;
-          let parentType;
-          if (typeof parent === "string" && parent) {
-            const resolvedParent = resolveParentRef(page.components, parent);
-            const entry = { parent, slot_name };
-            const parentError = resolvedParent.ok ? applyResolvedParent(entry, resolvedParent) : resolvedParent.error;
-            if (parentError) {
-              parentErrors.push(`Component "${layout.component_id}": ${parentError}`);
-              return { ...layout, parentType };
-            }
-            parent = entry.parent;
-            slot_name = entry.slot_name;
-          }
-          if (slot_name !== void 0) {
-            parent ??= current.parent ? decodeComponentParent(current.parent).parentId : void 0;
-            if (!parent) {
-              if (slot_name === "body") {
-                rootSlotWarnings.push(`Component "${layout.component_id}": slot_name:"body" ignored on a root component (it has no parent slots).`);
-                slot_name = void 0;
-              } else {
-                throw new Error(`Component "${layout.component_id}": slot_name:"${slot_name}" requires an existing or explicit parent.`);
-              }
-            }
-          }
-          if (parent) {
-            const decoded = decodeComponentParent(parent);
-            const parentComponent = components.get(decoded.parentId);
-            if (parentComponent && isPackContainerType(parentComponent.type)) {
-              const named = slot_name ?? (parent !== decoded.parentId ? decoded.slotName : void 0);
-              const slot = resolvePackSlot(parentComponent, named, current.name ?? current.id);
-              if (!slot.ok)
-                parentErrors.push(slot.error);
-              else {
-                parent = decoded.parentId;
-                slot_name = slot.slotName;
-                parentType = parentComponent.type;
-              }
-            }
-          }
-          return { ...layout, parent, slot_name, parentType };
-        });
-        if (parentErrors.length) {
-          return fail(new Error(`${parentErrors.join(" ")} (Nothing was saved: refused before any write.)`));
-        }
-        const changes = new Map(resolvedLayouts.map((layout) => [layout.component_id, layout]));
-        const projected = page.components.map((component) => {
-          const change = changes.get(component.id);
-          if (!change)
-            return component;
-          const currentLayouts = component.layouts ?? {};
-          return {
-            ...component,
-            layouts: {
-              ...currentLayouts,
-              desktop: change.desktop ?? currentLayouts?.desktop,
-              mobile: change.mobile ?? currentLayouts?.mobile
-            },
-            parent: change.parent !== void 0 ? encodeComponentParent(change.parent, change.slot_name, change.parentType) : component.parent,
-            slotName: change.slot_name
-          };
-        });
-        const changedIds = new Set(resolvedLayouts.map((layout) => layout.component_id));
-        const changed = projected.filter((component) => component.id && changedIds.has(component.id));
-        const introducedForChanged = (lint2) => changed.flatMap((component) => introducedLintFindings(lint2([components.get(component.id)]), lint2([component])));
-        const errors = [
-          ...introducedLintFindings(lintComponentSlots(page.components), lintComponentSlots(projected)),
-          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).errors)),
-          ...introducedForChanged(lintUnusableTextGeometry)
-        ];
-        if (errors.length)
-          return fail(new Error(`${errors.join(" ")} (Nothing was saved: refused before any write.)`));
-        const nestedWidths = new Set(lintNestedContainerWidths(projected));
-        const warnings = [.../* @__PURE__ */ new Set([
-          ...layoutWarnings,
-          ...rootSlotWarnings,
-          ...introducedForChanged((items) => items.flatMap((component) => lintComponentSpec(component).warnings)),
-          ...introducedForChanged((items) => items.flatMap(lintStandardSingleLineInputHeight)),
-          ...introducedForChanged(lintTextGeometry),
-          ...lintRenderedGeometry(projected).filter((warning) => !nestedWidths.has(warning)),
-          ...introducedLintFindings(lintNestedContainerWidths(page.components), [...nestedWidths])
-        ])];
-        const result = await client.updateLayouts({
-          appId: args.app_id,
-          versionId: args.version_id,
-          pageId: args.page_id,
-          layouts: resolvedLayouts.map((l) => ({
-            componentId: l.component_id,
-            desktop: l.desktop,
-            mobile: l.mobile,
-            parent: l.parent,
-            slotName: l.slot_name,
-            parentType: l.parentType
-          }))
-        });
-        const appended = appendedChildOrders(page.components, reparentAdditions(page.components, resolvedLayouts.map((layout) => ({
-          componentId: layout.component_id,
-          parent: layout.parent !== void 0 ? encodeComponentParent(layout.parent, layout.slot_name, layout.parentType) : void 0
-        }))));
-        if (appended.size) {
-          await client.updateComponents({
-            appId: args.app_id,
-            versionId: args.version_id,
-            pageId: args.page_id,
-            updates: [...appended].map(([componentId, order]) => ({
-              componentId,
-              definition: { properties: { childOrder: childOrderProperty(order) } }
-            }))
-          });
-        }
-        return ok({ ...result, warnings });
       } catch (err) {
         return fail(err);
       }

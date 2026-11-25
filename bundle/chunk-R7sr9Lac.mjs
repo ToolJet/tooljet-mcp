@@ -1,14 +1,585 @@
 import { createRequire } from "node:module";
-import { o as ok, f as fail, j as exposeActions, k as assessQueryRead, m as resolvedReadRefusal, p as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, q as applyResolvedBindings, u as connectorLabel, S as SQL_DIALECT } from "./chunk-w14kofOC.mjs";
-import { W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-d_W8P3vu.mjs";
-import { b0 as external_exports } from "./chunk-5U2_zDJi.mjs";
-import { g as getDatasourceQuerySchema, s as singleSpecRef, b as SPEC_DISCOVERY_METHODS, c as hubspotSpecs, e as extractSpec, l as loadKindSpec, d as listEndpoints, f as specHost, r as rankEndpoints, i as endpointTagCounts, j as endpointParameters } from "./chunk-D7K0V5QF.mjs";
+import { aL as ok, aK as fail, aC as external_exports, aM as exposeActions } from "./chunk-Cd9iyktb.mjs";
+import { W as WORKSPACE_ACCESS_KEYS, a as WORKSPACE_PERMISSION_KEYS, w as workspaceAccessKeys } from "./chunk-B82rbE9M.mjs";
+import { a as assessQueryRead, b as resolvedReadRefusal, c as resolveStaticBindings, s as sqlConnectorPath, G as GUI_LIST_ROWS_KEYS, d as applyResolvedBindings, e as connectorLabel, S as SQL_DIALECT } from "./chunk-C9X9Iy8K.mjs";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer, request } from "node:http";
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP, connect } from "node:net";
+createRequire(import.meta.url);
+var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
+function codeScreens(summary) {
+  const pageIds = new Set(summary.pages.map((page) => page.id));
+  const screens = [];
+  for (const page of summary.pages) {
+    for (const component of page.components) {
+      const props = component.properties ?? {};
+      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
+        continue;
+      let routes = props.routes?.value;
+      if (typeof routes === "string") {
+        try {
+          routes = JSON.parse(routes);
+        } catch {
+          routes = [];
+        }
+      }
+      if (!Array.isArray(routes))
+        continue;
+      for (const route of routes) {
+        if (typeof route?.id !== "string" || typeof route?.path !== "string")
+          continue;
+        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
+          continue;
+        screens.push({
+          route_id: route.id,
+          path: route.path,
+          ...typeof route.title === "string" ? { title: route.title } : {},
+          page_id: route.pageId,
+          code_page_id: page.id
+        });
+      }
+    }
+  }
+  return screens;
+}
+function findScreen(summary, route) {
+  const screens = codeScreens(summary);
+  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
+  if (screen)
+    return screen;
+  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
+}
+function findQuery(summary, ref) {
+  const lower = ref.toLowerCase();
+  return summary.queries.find((q) => q.id === ref) ?? summary.queries.find((q) => q.name === ref) ?? summary.queries.find((q) => q.name?.toLowerCase() === lower);
+}
+function isCodeApp(summary) {
+  return summary.pages.some((page) => page.components.some((component) => {
+    const props = component.properties ?? {};
+    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
+  }));
+}
+function findResource(summary, resourceType, resourceId) {
+  if (resourceType === "page") {
+    const page = summary.pages.find((candidate) => candidate.id === resourceId) ?? summary.pages.find((candidate) => candidate.name === resourceId);
+    if (page)
+      return { type: resourceType, id: page.id, name: page.name };
+  } else if (resourceType === "query") {
+    const query = findQuery(summary, resourceId);
+    if (query)
+      return { type: resourceType, id: query.id, name: query.name };
+  } else {
+    for (const page of summary.pages) {
+      const component = page.components.find((candidate) => candidate.id === resourceId);
+      if (component) {
+        return {
+          type: resourceType,
+          id: component.id,
+          name: component.name,
+          component_type: component.type,
+          page_id: page.id,
+          page_name: page.name
+        };
+      }
+    }
+  }
+  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
+}
+function normalizePermission(permissions) {
+  const permission = permissions[0];
+  if (!permission)
+    return { access: "all", permission_id: null };
+  if (permission.type === "SINGLE") {
+    return {
+      access: "users",
+      permission_id: permission.id,
+      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
+        email: user.email
+      }))
+    };
+  }
+  if (permission.type === "GROUP") {
+    return {
+      access: "groups",
+      permission_id: permission.id,
+      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
+    };
+  }
+  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
+}
+function planLimits(features) {
+  if (!features)
+    return void 0;
+  const known = Object.entries({
+    query_limits: features.appPermissionQuery,
+    screen_limits: features.appPermissionPages,
+    server_side_current_user: features.serverSideGlobalResolve
+  }).filter(([, value]) => typeof value === "boolean");
+  return known.length ? Object.fromEntries(known) : void 0;
+}
+async function subjectGroups(client, open) {
+  const openIds = new Map(open.map((group) => [group.id, group]));
+  let workspace;
+  try {
+    workspace = await client.listWorkspaceGroups();
+  } catch {
+    workspace = void 0;
+  }
+  if (!workspace) {
+    return {
+      groups: open.map((group) => ({ ...group, can_open_app: true })),
+      complete: false
+    };
+  }
+  const groups = workspace.map((group) => ({
+    id: group.id,
+    name: group.name,
+    type: group.type,
+    ...typeof openIds.get(group.id)?.count === "number" ? { count: openIds.get(group.id).count } : {},
+    can_open_app: openIds.has(group.id),
+    ...group.disabled ? { disabled: true } : {}
+  }));
+  for (const group of open)
+    if (!groups.some((known) => known.id === group.id))
+      groups.push({ ...group, can_open_app: true });
+  return { groups, complete: true };
+}
+function viewRule(appId, appName, groupId) {
+  return {
+    name: `${(appName || "App").slice(0, 40)} (view)`,
+    type: "app",
+    groupId,
+    isAll: false,
+    createResourcePermissionObject: {
+      canEdit: false,
+      canView: true,
+      hideFromDashboard: false,
+      canAccessDevelopment: false,
+      canAccessStaging: false,
+      canAccessProduction: false,
+      canAccessReleased: true,
+      resourcesToAdd: [{ appId }]
+    }
+  };
+}
+async function groupDirectory(client, appId) {
+  const subjects = await client.listAppPermissionSubjects(appId);
+  const { groups, complete } = await subjectGroups(client, subjects.groups);
+  return { groups, complete, openIds: new Set(subjects.groups.map((group) => group.id)) };
+}
+function resolveGroups(directory, refs) {
+  const ids = [];
+  const unknown = [];
+  for (const ref of refs) {
+    const lower = ref.toLowerCase();
+    const group = directory.groups.find((g) => g.id === ref) ?? directory.groups.find((g) => g.name === ref) ?? directory.groups.find((g) => g.name?.toLowerCase() === lower);
+    if (group)
+      ids.push(group.id);
+    else if (!directory.complete && UUID.test(ref))
+      ids.push(ref);
+    else
+      unknown.push(ref);
+  }
+  return { ids: [...new Set(ids)], unknown };
+}
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function groupsToGrant(directory, groupIds, grant) {
+  const missing = groupIds.filter((id) => !directory.openIds.has(id));
+  if (!missing.length)
+    return [];
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
+  const names = missing.map((id) => byId.get(id)?.name ?? id);
+  if (!grant) {
+    throw new Error(`${names.join(", ")} cannot open this app yet, so a limit to ${missing.length > 1 ? "them" : "it"} would leave ${missing.length > 1 ? "their" : "its"} members without the screen or query. Pass grant_app_access: true to give each of them view access to this app only (the released app), or give them access in Workspace settings > Groups. Nothing was changed.`);
+  }
+  const disabled = missing.filter((id) => byId.get(id)?.disabled);
+  if (disabled.length) {
+    throw new Error(`${disabled.map((id) => byId.get(id)?.name ?? id).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
+  }
+  return missing;
+}
+async function removeGrants(client, appId, granted) {
+  const left = [];
+  for (const grant of granted) {
+    try {
+      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
+      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
+      for (const rule of added)
+        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
+    } catch {
+      left.push(grant.name ?? grant.group_id);
+    }
+  }
+  return left;
+}
+async function grantGroups(client, appId, appName, directory, missing) {
+  const byId = new Map(directory.groups.map((group) => [group.id, group]));
+  const granted = [];
+  const undo = async (reason) => {
+    const left = await removeGrants(client, appId, granted);
+    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
+  };
+  for (const id of missing) {
+    const rule = viewRule(appId, appName, id);
+    try {
+      await client.writeWorkspaceGroupAccess("POST", id, "app", void 0, rule);
+    } catch (error) {
+      await undo(`${byId.get(id)?.name ?? id} could not be given access to this app: ${error.message}.`);
+    }
+    granted.push({ group_id: id, ...byId.get(id)?.name ? { name: byId.get(id).name } : {}, rule_name: rule.name });
+  }
+  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
+  const still = missing.filter((id) => !after.has(id));
+  if (still.length) {
+    await undo(`ToolJet did not confirm that ${still.map((id) => byId.get(id)?.name ?? id).join(", ")} can open this app after the access rule was added.`);
+  }
+  return granted;
+}
+function resolveTargets(args, summary, problems) {
+  const targets = [];
+  const routes = [...args.route !== void 0 ? [args.route] : [], ...args.routes ?? []];
+  const queries = [...args.query !== void 0 ? [args.query] : [], ...args.queries ?? []];
+  const type = args.resource_type === "screen" ? "page" : args.resource_type;
+  if (routes.length && type && type !== "page") {
+    problems.push(`route names a Code mode screen (a page permission), so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
+  }
+  if (queries.length && type && type !== "query") {
+    problems.push(`query names a query, so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
+  }
+  for (const route of [...new Set(routes)]) {
+    try {
+      const screen = findScreen(summary, route);
+      targets.push({
+        resourceType: "page",
+        resourceId: screen.page_id,
+        resource: {
+          ...findResource(summary, "page", screen.page_id),
+          screen: { route_id: screen.route_id, path: screen.path, title: screen.title }
+        }
+      });
+    } catch (error) {
+      problems.push(error.message);
+    }
+  }
+  const unknownQueries = [];
+  for (const ref of [...new Set(queries)]) {
+    const query = findQuery(summary, ref);
+    if (!query)
+      unknownQueries.push(ref);
+    else
+      targets.push({ resourceType: "query", resourceId: query.id, resource: { type: "query", id: query.id, name: query.name } });
+  }
+  if (unknownQueries.length) {
+    const names = summary.queries.map((q) => q.name ?? q.id);
+    problems.push(`No query ${unknownQueries.map((q) => `"${q}"`).join(", ")} in this app. ` + (names.length ? `Its queries: ${names.join(", ")}.` : "The app has no queries."));
+  }
+  if (args.resource_id !== void 0) {
+    const kinds = type ? [type] : ["query", "page", "component"];
+    let found;
+    for (const kind of kinds) {
+      try {
+        found = { resourceType: kind, resourceId: "", resource: findResource(summary, kind, args.resource_id) };
+        found.resourceId = String(found.resource.id);
+        break;
+      } catch {
+      }
+    }
+    if (found)
+      targets.push(found);
+    else
+      problems.push(`resource_id "${args.resource_id}" is no ${type ?? "page, query or component"} of this app. Pass a query by its name with query, or a screen with route.`);
+  }
+  if (!routes.length && !queries.length && args.resource_id === void 0) {
+    const screens = codeScreens(summary);
+    problems.push("Name what to limit: route (or routes) for screens, query (or queries) for queries, by name or id." + (screens.length ? ` Screens: ${screens.map((s) => s.path).join(", ")}.` : "") + (summary.queries.length ? ` Queries: ${summary.queries.map((q) => q.name ?? q.id).join(", ")}.` : "") + // A build sent set with groups and grant_app_access but nothing to limit, four times over (2026-11-09).
+    (args.grant_app_access || args.groups?.length || args.group_ids?.length ? " There is no app-wide grant: a group gets into this app with the first screen or query limited to it (grant_app_access does that part). Everyone who can open the app already sees what is not limited, so when no screen or query should be limited, there is nothing to set." + (isCodeApp(summary) && !screens.length ? " Screens are listed here after code_app_install has saved the routes." : "") : ""));
+  }
+  const seen = /* @__PURE__ */ new Set();
+  return targets.filter((target) => {
+    const key = `${target.resourceType}:${target.resourceId}`;
+    if (seen.has(key))
+      return false;
+    seen.add(key);
+    return true;
+  });
+}
+function exampleCall(args, summary, codeApp) {
+  const example = { action: args.action === "get" ? "get" : args.action, app_id: args.app_id };
+  const screens = summary ? codeScreens(summary) : [];
+  if (args.routes?.length)
+    example.routes = args.routes;
+  else if (args.route)
+    example.route = args.route;
+  else if (args.queries?.length)
+    example.queries = args.queries;
+  else if (args.query)
+    example.query = args.query;
+  else if (screens.length)
+    example.route = screens[screens.length - 1].path;
+  else if (summary?.queries.length)
+    example.query = summary.queries[0].name ?? summary.queries[0].id;
+  else
+    example.route = "/finance";
+  if (args.action === "set") {
+    if (args.users?.length || args.user_ids?.length)
+      example.users = args.users ?? args.user_ids;
+    else
+      example.groups = args.groups ?? args.group_ids ?? ["Finance"];
+    if (!codeApp)
+      example.confirm = true;
+  }
+  if (args.action === "clear")
+    example.confirm = true;
+  return JSON.stringify(example);
+}
+function manageAppPermissionsTool(client) {
+  return {
+    name: "manage_app_permissions",
+    title: "Manage App Permissions",
+    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
+    // every user who can reach the app, so the hint covers its widest action.
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: false
+    },
+    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
+    inputSchema: {
+      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
+      app_id: external_exports.string().uuid(),
+      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
+      routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
+      query: external_exports.string().min(1).max(200).optional().describe("A query by name or id."),
+      queries: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Several queries at once."),
+      groups: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Group names or ids."),
+      users: external_exports.array(external_exports.string().min(1).max(320)).min(1).max(100).optional().describe("User emails or ids."),
+      resource_type: external_exports.enum(["page", "query", "component", "screen"]).optional().describe("Inferred; only needed with resource_id."),
+      resource_id: external_exports.string().min(1).max(200).optional(),
+      access_type: external_exports.enum(["users", "groups"]).optional().describe("Inferred from groups or users."),
+      user_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
+      group_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
+      confirm: external_exports.boolean().optional(),
+      grant_app_access: external_exports.boolean().optional().describe("set with groups: give a group that cannot open the app view access to this app only first (default true in a Code mode app)")
+    },
+    async handler(args) {
+      try {
+        if (args.action === "list_subjects") {
+          const [subjects, features] = await Promise.all([
+            client.listAppPermissionSubjects(args.app_id),
+            client.getLicenseFeatureAccess().catch(() => void 0)
+          ]);
+          const { groups, complete } = await subjectGroups(client, subjects.groups);
+          const plan = planLimits(features);
+          return ok({
+            app_id: args.app_id,
+            users: subjects.users,
+            groups,
+            ...plan ? { plan } : {},
+            note: complete ? "A group with can_open_app false cannot open the app: a set naming it gives it view access to this app only first (in a Code mode app by default, elsewhere with grant_app_access:true)." : "Only the groups that can open the app are listed: the workspace group list could not be read."
+          });
+        }
+        if (args.action === "list_screens") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const screens = await Promise.all(codeScreens(summary2).map(async (screen) => ({
+            ...screen,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
+          })));
+          return ok({ app_id: args.app_id, screens });
+        }
+        if (args.action === "list_queries") {
+          const summary2 = await client.getAppSummary(args.app_id);
+          const queries = await Promise.all(summary2.queries.map(async (q) => ({
+            query_id: q.id,
+            name: q.name,
+            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
+          })));
+          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
+        }
+        const summary = await client.getAppSummary(args.app_id);
+        const codeApp = isCodeApp(summary);
+        const problems = [];
+        const targets = resolveTargets(args, summary, problems);
+        let accessType;
+        let subjectIds = [];
+        let directory;
+        if (args.action === "set") {
+          const groupRefs = [...args.groups ?? [], ...args.group_ids ?? []];
+          const userRefs = [...args.users ?? [], ...args.user_ids ?? []];
+          if (groupRefs.length && userRefs.length) {
+            problems.push("Pass groups or users, not both: one limit is to groups or to named users.");
+          } else if (!groupRefs.length && !userRefs.length) {
+            problems.push("Name who keeps access: groups (names or ids) or users (emails or ids).");
+          } else {
+            accessType = groupRefs.length ? "groups" : "users";
+            if (args.access_type && args.access_type !== accessType) {
+              problems.push(`access_type "${args.access_type}" does not match the ${accessType} passed: leave access_type out.`);
+            }
+          }
+          if (accessType === "groups") {
+            directory = await groupDirectory(client, args.app_id);
+            const { ids, unknown } = resolveGroups(directory, groupRefs);
+            if (unknown.length) {
+              problems.push(`${unknown.map((g) => `"${g}"`).join(", ")} ${unknown.length > 1 ? "are not groups" : "is not a group"} of this workspace. Its groups: ${directory.groups.map((g) => g.name ?? g.id).join(", ")}.`);
+            }
+            subjectIds = ids;
+          } else if (accessType === "users") {
+            const users = (await client.listAppPermissionSubjects(args.app_id)).users;
+            const unknown = [];
+            for (const ref of userRefs) {
+              const lower = ref.toLowerCase();
+              const user = users.find((u) => u.id === ref) ?? users.find((u) => u.email?.toLowerCase() === lower);
+              if (user)
+                subjectIds.push(user.id);
+              else
+                unknown.push(ref);
+            }
+            if (unknown.length) {
+              problems.push(`${unknown.map((u) => `"${u}"`).join(", ")} cannot open this app or is not a user of this workspace (users must already have access to the app; list_subjects lists them).`);
+            }
+            subjectIds = [...new Set(subjectIds)];
+            if (args.grant_app_access === true) {
+              problems.push("grant_app_access applies only to a limit to groups: leave it out with users.");
+            }
+          }
+          if (!codeApp && args.confirm !== true) {
+            problems.push("set on this app needs confirm:true after the user explicitly approves the exact access rule.");
+          }
+        }
+        if (args.action === "clear" && args.confirm !== true) {
+          problems.push("clear opens the resource to everyone who can open the app, so it needs confirm:true after the user approves it.");
+        }
+        if (problems.length) {
+          throw new Error(`manage_app_permissions ${args.action} was refused and nothing was changed:
+` + problems.map((problem) => `- ${problem}`).join("\n") + `
+A call that works: ${exampleCall(args, summary, codeApp)}`);
+        }
+        const one = targets.length === 1;
+        if (args.action === "get") {
+          const results2 = await Promise.all(targets.map(async (t) => ({ resource: t.resource, ...normalizePermission(await client.getAppPermission(args.app_id, t.resourceType, t.resourceId)) })));
+          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
+        }
+        if (args.action === "clear") {
+          for (const t of targets)
+            await client.clearAppPermission(args.app_id, t.resourceType, t.resourceId);
+          const results2 = targets.map((t) => ({ resource: t.resource, access: "all", permission_id: null }));
+          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
+        }
+        const grant = args.grant_app_access ?? codeApp;
+        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
+        const results = [];
+        for (const t of targets) {
+          try {
+            const permissions = await client.setAppPermission({
+              appId: args.app_id,
+              resourceType: t.resourceType,
+              resourceId: t.resourceId,
+              accessType,
+              subjectIds
+            });
+            results.push({ resource: t.resource, ...normalizePermission(permissions) });
+          } catch (error) {
+            results.push({ resource: t.resource, error: error.message });
+          }
+        }
+        const failed = results.filter((r) => r.error);
+        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
+        if (failed.length === results.length) {
+          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
+        }
+        if (failed.length) {
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
+                app_id: args.app_id,
+                applied: results.filter((r) => !r.error),
+                failed
+              })
+            }],
+            isError: true
+          };
+        }
+        let granted = [];
+        if (toGrant.length) {
+          try {
+            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
+          } catch (error) {
+            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
+          }
+        }
+        const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
+        const body = {
+          app_id: args.app_id,
+          ...one ? results[0] : { results },
+          ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
+        };
+        return ok(body);
+      } catch (error) {
+        return fail(error);
+      }
+    }
+  };
+}
+var appPermissions = [
+  {
+    action: "list_screens",
+    name: "list_app_permission_screens",
+    title: "List App Screen Permissions",
+    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_queries",
+    name: "list_app_permission_queries",
+    title: "List App Query Permissions",
+    description: "Read the queries and their access restrictions for one app. Does not change access.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "list_subjects",
+    name: "list_app_permission_subjects",
+    title: "List App Permission Subjects",
+    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
+    required: ["app_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "get",
+    name: "get_app_resource_permission",
+    title: "Get App Resource Permission",
+    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
+    required: ["app_id", "resource_type", "resource_id"],
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
+  },
+  {
+    action: "set",
+    name: "set_app_resource_permission",
+    title: "Set App Resource Permission",
+    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
+    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
+    optional: ["user_ids", "group_ids"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  },
+  {
+    action: "clear",
+    name: "clear_app_resource_permission",
+    title: "Clear App Resource Permission",
+    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
+    required: ["app_id", "resource_type", "resource_id", "confirm"],
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+  }
+];
+function appPermissionActionTools(source) {
+  return exposeActions(source, appPermissions);
+}
 createRequire(import.meta.url);
 var listWorkspaceGroupsInput = external_exports.object({
   group_id: external_exports.string().uuid().optional(),
@@ -314,284 +885,6 @@ var workspaceGroups = [
 ];
 function workspaceGroupActionTools(source) {
   return exposeActions(source, workspaceGroups);
-}
-createRequire(import.meta.url);
-var requestSchema = external_exports.object({
-  method: external_exports.string().min(1),
-  schema: external_exports.string().optional(),
-  table: external_exports.string().optional(),
-  search: external_exports.string().optional(),
-  page: external_exports.number().int().positive().optional(),
-  limit: external_exports.number().int().positive().max(1e3).optional(),
-  args: external_exports.record(external_exports.string(), external_exports.any()).optional()
-});
-function datasourceMetadataTools(source) {
-  const methods = [
-    ["listDatasets", "list_datasource_datasets", "List Datasource Datasets", "List dataset names in a connected datasource."],
-    ["listTables", "list_datasource_tables", "List Datasource Tables", "List tables or API endpoint paths from a connected datasource; for HubSpot, an omitted schema lists spec groups."],
-    ["listColumns", "list_datasource_columns", "List Datasource Columns", "Read column definitions for one datasource table."],
-    ["getSheets", "list_datasource_sheets", "List Datasource Sheets", "List sheets in a connected spreadsheet datasource."],
-    ["getSpreadsheets", "list_datasource_spreadsheets", "List Datasource Spreadsheets", "List spreadsheets available to a connected datasource."],
-    ["getEndpointSchema", "get_datasource_endpoint_schema", "Get Datasource Endpoint Schema", "Read the request contract for one API endpoint from its specification; never send the endpoint request."],
-    ["listCollections", "list_datasource_collections", "List Datasource Collections", "List collection names in a connected document datasource."],
-    ["listSchemas", "list_datasource_schemas", "List Datasource Schemas", "List database schema names in a connected datasource."],
-    ["getTenants", "list_datasource_tenants", "List Datasource Tenants", "List tenant metadata available through a connected datasource."]
-  ];
-  return exposeActions(source, methods.map(([action, name, title, description]) => ({
-    action,
-    name,
-    title,
-    description: `${description} Uses the fixed ${action} metadata method, only when the datasource advertises it. Does not execute saved queries, author resources, or invoke the API endpoints described by a returned schema. schema/table/search/page/limit are selectors; args supplies datasource-specific selectors such as spreadsheet ID or endpoint HTTP method.`,
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
-    required: ["version_id", "datasource_id"],
-    optional: ["schema", "table", "search", "page", "limit", "args"]
-  })), "method");
-}
-function invokeArgs(request2) {
-  const customValues = request2.args?.values && typeof request2.args.values === "object" && !Array.isArray(request2.args.values) ? request2.args.values : {};
-  const values = {
-    ...customValues,
-    ...request2.schema !== void 0 ? { schema: request2.schema } : {},
-    ...request2.table !== void 0 ? { table: request2.table } : {}
-  };
-  return {
-    ...request2.args ?? {},
-    ...Object.keys(values).length ? { values } : {},
-    ...request2.search !== void 0 ? { search: request2.search } : {},
-    ...request2.page !== void 0 ? { page: request2.page } : {},
-    ...request2.limit !== void 0 ? { limit: request2.limit } : {}
-  };
-}
-var specCache = /* @__PURE__ */ new Map();
-function specText(entry) {
-  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
-  return typeof raw === "string" ? raw : void 0;
-}
-function parseSpecCached(options) {
-  const key = specText(options.spec) ?? specText(options.definition);
-  if (key === void 0)
-    return extractSpec(options);
-  const hit = specCache.get(key);
-  if (hit)
-    return hit;
-  const parsed = extractSpec(options);
-  if (parsed) {
-    if (specCache.size > 8)
-      specCache.clear();
-    specCache.set(key, parsed);
-  }
-  return parsed;
-}
-function openapiIntrospection(spec, request2) {
-  if (request2.method === "listTables") {
-    const endpoints = listEndpoints(spec);
-    const host2 = specHost(spec);
-    const header = { total: endpoints.length, ...host2 ? { host: host2 } : {} };
-    if (request2.search) {
-      const ranked = rankEndpoints(spec, endpoints, request2.search);
-      const limit2 = request2.limit ?? 25;
-      return {
-        ...header,
-        search: request2.search,
-        matched: ranked.length,
-        ...ranked.length > limit2 ? { returned: limit2 } : {},
-        // Ordered by relevance, not spec order: the caller should read from the top.
-        endpoints: ranked.slice(0, limit2).map(({ score, ...endpoint }) => endpoint),
-        ...ranked.length ? {} : { hint: "No endpoint matched. Retry with a broader term, or omit `search` to see the spec's tags." }
-      };
-    }
-    const limit = request2.limit ?? 200;
-    if (endpoints.length > limit) {
-      return {
-        ...header,
-        tags: endpointTagCounts(spec, endpoints),
-        returned: limit,
-        truncated: true,
-        next_step: `This spec has ${endpoints.length} endpoints. Call listTables again with \`search\` describing what you need (a phrase is fine, it is ranked by relevance), or with a tag name from \`tags\`.`,
-        endpoints: endpoints.slice(0, limit)
-      };
-    }
-    return { ...header, endpoints };
-  }
-  const path = request2.table ?? (typeof request2.args?.path === "string" ? request2.args.path : void 0);
-  const method = ["operation", "method", "httpMethod", "http_method", "verb"].map((key) => request2.args?.[key]).find((value) => typeof value === "string" && !!value);
-  if (!path || !method) {
-    throw new Error('getEndpointSchema needs the endpoint path and HTTP method: pass the path as `table` and the method as `args.operation` (for example table:"/pets/{petId}", args:{operation:"get"}); `args.httpMethod` and `args.method` are accepted too.');
-  }
-  const result = endpointParameters(spec, path, method);
-  if (!result.found) {
-    throw new Error(`The spec has no ${method.toLowerCase()} operation on path "${path}". Call listTables first.`);
-  }
-  const buckets = {};
-  for (const parameter of result.parameters) {
-    const bucket = parameter.in === "header" ? "params.header" : parameter.in === "path" ? "params.path" : parameter.in === "query" ? "params.query" : `unsupported:${parameter.in}`;
-    (buckets[bucket] ??= []).push(parameter.name);
-  }
-  if (result.requestBody)
-    buckets["params.request"] = ["<request body>"];
-  const operation = method.toLowerCase();
-  const host = specHost(spec);
-  return {
-    path,
-    operation,
-    /* A runnable skeleton, not just a description: copy it and fill the buckets.
-       All four buckets are present even when empty because the plugin destructures every one of
-       them and calls Object.entries(params.path) unguarded — omitting a bucket fails the query with
-       "Cannot convert undefined or null to object" before the request is ever built. */
-    query_options: {
-      ...host ? { host } : {},
-      path,
-      operation,
-      params: { request: {}, query: {}, header: {}, path: {} }
-    },
-    // Which query-option bucket each parameter belongs in, so the caller does not have to infer it.
-    buckets,
-    parameters: result.parameters,
-    ...result.response ? { response: result.response } : {},
-    ...result.requestBody ? { requestBody: result.requestBody } : {},
-    ...host ? {} : { host_warning: 'This spec declares no server URL. The query needs an explicit `host`, or the request fails with "Invalid URL".' }
-  };
-}
-function inspectDatasourceSchemaTool(client) {
-  return {
-    name: "inspect_datasource_schema",
-    title: "Inspect Datasource Schema",
-    // Invokes only plugin-advertised read-only metadata methods.
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      openWorldHint: true
-    },
-    description: 'Invoke one read-only metadata method advertised by a connected datasource plugin (for example listSchemas, listTables, listColumns, or listCollections). This avoids creating/running ad-hoc information_schema queries. HubSpot: call listTables without schema to list spec groups, then pass schema for endpoint discovery. Use get_datasource_query_schema with sections:["introspection"] to discover exact methods. Common schema/table/search/page/limit inputs are converted to ToolJet selector args; `args` adds plugin-specific fields. Only the requested metadata method is called. Use requests (up to 20) to batch independent table/column lookups after the schema/table names are known; every method is validated before any invocation.',
-    inputSchema: {
-      version_id: external_exports.string(),
-      datasource_id: external_exports.string(),
-      method: external_exports.string().min(1).optional(),
-      schema: external_exports.string().optional(),
-      table: external_exports.string().optional(),
-      search: external_exports.string().optional(),
-      page: external_exports.number().int().positive().optional(),
-      limit: external_exports.number().int().positive().max(1e3).optional(),
-      args: external_exports.record(external_exports.string(), external_exports.any()).optional(),
-      requests: external_exports.array(requestSchema).min(1).max(20).optional()
-    },
-    async handler(args) {
-      try {
-        const datasource = (await client.listDatasources(args.version_id)).find((candidate) => candidate.id === args.datasource_id);
-        if (!datasource) {
-          return fail(new Error(`Datasource "${args.datasource_id}" is not available on version "${args.version_id}".`));
-        }
-        const contract = getDatasourceQuerySchema(datasource.kind);
-        const kindSpec = singleSpecRef(datasource.kind);
-        const methods = [.../* @__PURE__ */ new Set([...contract?.introspectionMethods ?? [], ...kindSpec ? SPEC_DISCOVERY_METHODS : []])];
-        const topLevel2 = args.method ? [{
-          method: args.method,
-          schema: args.schema,
-          table: args.table,
-          search: args.search,
-          page: args.page,
-          limit: args.limit,
-          args: args.args
-        }] : [];
-        const seenRequests = /* @__PURE__ */ new Set();
-        const requests = [...args.requests ?? [], ...topLevel2].filter((request2) => {
-          if (!request2.method)
-            return false;
-          const key = JSON.stringify([request2.method, request2.schema ?? null, request2.table ?? null, request2.search ?? null]);
-          if (seenRequests.has(key))
-            return false;
-          seenRequests.add(key);
-          return true;
-        });
-        if (!requests.length) {
-          return fail(new Error("Provide a `method` or a `requests` batch."));
-        }
-        const asBatch = !!args.requests?.length || requests.length > 1;
-        const unsupported = [...new Set(requests.map((request2) => request2.method).filter((method) => !methods.includes(method)))];
-        if (unsupported.length) {
-          return fail(new Error(`Datasource kind "${datasource.kind}" does not advertise introspection method(s) ${unsupported.map((method) => `"${method}"`).join(", ")}. Available methods: ${methods.length ? methods.join(", ") : "none"}.`));
-        }
-        let openapiSpec;
-        if (datasource.kind === "openapi") {
-          const details = await client.getDatasourceConnectionDetails(args.datasource_id);
-          openapiSpec = parseSpecCached(details.options);
-          if (!openapiSpec) {
-            return fail(new Error("This OpenAPI datasource has no readable spec stored in its options, so its endpoints cannot be listed. Re-save the datasource with a valid OpenAPI/Swagger (JSON or YAML) document."));
-          }
-        }
-        const hubspotDocuments = /* @__PURE__ */ new Map();
-        let kindSpecDocument;
-        const results = await Promise.all(requests.map(async (request2) => {
-          if (datasource.kind === "hubspot") {
-            const specs = hubspotSpecs();
-            const selector = request2.schema ?? request2.args?.specType;
-            if (!selector && request2.method === "listTables") {
-              return { method: request2.method, result: {
-                specs,
-                next_step: "Choose a spec using schema (name, label or specType), then call listTables to find paths or getEndpointSchema to get query_options. Properties and Pipelines describe endpoints for discovering account-specific fields and stages."
-              } };
-            }
-            const selected = specs.find((spec) => [spec.name, spec.label, spec.specType].includes(String(selector)));
-            if (!selected)
-              throw new Error("HubSpot discovery requires a known schema. Call listTables without schema to list installed spec groups.");
-            if (!hubspotDocuments.has(selected.name)) {
-              hubspotDocuments.set(selected.name, client.getPluginSpec("hubspot", selected.name).then((text) => {
-                const spec = extractSpec({ spec: text });
-                if (!spec)
-                  throw new Error(`HubSpot spec "${selected.name}" is unavailable or invalid. Reinstall/update the plugin; do not invent its endpoints.`);
-                return spec;
-              }));
-            }
-            const document2 = await hubspotDocuments.get(selected.name);
-            const result2 = openapiIntrospection(document2, request2);
-            if (result2.query_options) {
-              delete result2.query_options.host;
-              delete result2.query_options.params.header;
-              delete result2.host_warning;
-              result2.query_options.specType = selected.specType;
-              if (result2.buckets?.["params.header"])
-                result2.unsupported_headers = result2.buckets["params.header"];
-              result2.notes = "HubSpot fixes the API host and authentication in the plugin. The spec describes API shapes; read Properties/Pipelines endpoints to verify account-specific fields and valid stage IDs. Do not guess them.";
-            }
-            return { method: request2.method, schema: selected.name, specType: selected.specType, result: result2 };
-          }
-          if (kindSpec && SPEC_DISCOVERY_METHODS.includes(request2.method)) {
-            kindSpecDocument ??= loadKindSpec(client, datasource.kind, kindSpec);
-            const result2 = openapiIntrospection(await kindSpecDocument, request2);
-            if (result2.query_options) {
-              delete result2.query_options.host;
-              delete result2.query_options.params?.header;
-              delete result2.host_warning;
-              if (result2.buckets?.["params.header"])
-                result2.unsupported_headers = result2.buckets["params.header"];
-              result2.notes = `The ${datasource.kind} plugin fixes the API host and authentication. Copy query_options as they are; put IDs in params.path and filters in params.query, each value flat (created[gte], expand[0]): the plugin cannot send a list or an object.`;
-            }
-            return { method: request2.method, ...request2.table ? { table: request2.table } : {}, result: result2 };
-          }
-          if (openapiSpec) {
-            const result2 = openapiIntrospection(openapiSpec, request2);
-            return { method: request2.method, ...request2.table ? { table: request2.table } : {}, result: result2 };
-          }
-          const converted = invokeArgs(request2);
-          const result = await client.invokeDatasourceMethod({
-            dataSourceId: args.datasource_id,
-            method: request2.method,
-            ...Object.keys(converted).length ? { args: converted } : {}
-          });
-          return {
-            method: request2.method,
-            ...request2.schema ? { schema: request2.schema } : {},
-            ...request2.table ? { table: request2.table } : {},
-            result
-          };
-        }));
-        const header = { datasource: { id: datasource.id, name: datasource.name, kind: datasource.kind } };
-        return asBatch ? ok({ ...header, results }) : ok({ ...header, method: results[0].method, result: results[0].result });
-      } catch (err) {
-        return fail(err);
-      }
-    }
-  };
 }
 createRequire(import.meta.url);
 var MAX_AUTO_ROWS = 1e3;
@@ -2271,10 +2564,10 @@ function verifyPageRenderTool(client, viewerBase, driver = loadPlaywright) {
 export {
   NOT_CHECKED_AUTOMATICALLY as N,
   autoReadPreflight as a,
-  datasourceMetadataTools as d,
-  inspectDatasourceSchemaTool as i,
+  manageWorkspaceGroupsTool as b,
+  appPermissionActionTools as c,
   listWorkspaceGroupsTool as l,
-  manageWorkspaceGroupsTool as m,
+  manageAppPermissionsTool as m,
   verifyPageRenderTool as v,
   workspaceGroupActionTools as w
 };

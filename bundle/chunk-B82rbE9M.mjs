@@ -1,9 +1,11 @@
 import { createRequire } from "node:module";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as codeCliProblem } from "./chunk-DRRtluDi.mjs";
-import { b0 as external_exports, b8 as definition } from "./chunk-5U2_zDJi.mjs";
-import { e as assertPersistableQueryToggles, n as normalizeWorkflowQueryOptions, t as tableQuotaError, T as TableQuotaError, h as assertWorkflowQueryOptions, w as workflowMappingMatches, a as activePackSet, f as fail, o as ok, j as exposeActions } from "./chunk-w14kofOC.mjs";
-import { h as encodeComponentParent, d as decodeComponentParent, f as isPackContainerType, g as resolvePackSlot, w as assertPageIcon, i as isMisplacedStyleKey } from "./chunk-_cASSUa6.mjs";
-import { C as downgradeFlexForLibrary, D as resolveComponentLibrary, A as componentLibraryChoices, E as toLibraryComponent, F as missingLibraryPins, G as libraryTypeOf, H as savedComponentLibrary, I as checkedLibrarySelection, j as defaultPack, J as COMPONENT_PACK_DESCRIPTION } from "./chunk-DGkwZJJU.mjs";
+import { c as codeCliProblem } from "./chunk-Dsfx-2OP.mjs";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, e as definition } from "./chunk-Doi2Oo0R.mjs";
+import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BPm0h8HP.mjs";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, b as resolvePackSlot, x as assertPageIcon, o as isMisplacedStyleKey } from "./chunk-BaIomYAg.mjs";
+import { v as resolveComponentLibrary, u as componentLibraryChoices, w as savedComponentLibrary, x as checkedLibrarySelection, h as defaultPack, y as COMPONENT_PACK_DESCRIPTION } from "./chunk-BnOoNdan.mjs";
+import { aC as external_exports, aN as downgradeFlexForLibrary, aO as toLibraryComponent, aP as missingLibraryPins, aQ as libraryTypeOf, aR as activePackSet, aK as fail, aL as ok, aM as exposeActions } from "./chunk-Cd9iyktb.mjs";
+import { a as assertPersistableQueryToggles, r as runpyReturnError, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CKmFvmZ4.mjs";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { isDeepStrictEqual } from "node:util";
@@ -1401,6 +1403,13 @@ function condenseErrorBody(detail, limit = 600) {
   }
   return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
 }
+var ReleaseScanTimeout = class extends Error {
+  environment;
+  constructor(environment) {
+    super(`The version was saved in ${environment}. The release stopped while waiting for the security scan. Once the Security panel shows it passed, retry the release with this saved version.`);
+    this.environment = environment;
+  }
+};
 var ToolJetHttpError = class extends Error {
   status;
   method;
@@ -1423,7 +1432,7 @@ function pageHiddenNeedsUpdate(page2, expected) {
 }
 async function assertOk(res, method) {
   if (!res.ok) {
-    const detail = await res.text();
+    const detail = await res.text().catch(() => res.statusText);
     if (method === "createTable" && res.status === 451)
       throw new TableQuotaError();
     throw new ToolJetHttpError(res.status, method, detail);
@@ -2170,125 +2179,159 @@ function createClient(auth, config) {
     };
   }
   async function releaseApp(appId, versionId) {
-    const readVersion = async () => {
-      const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/versions`);
-      await assertOk(versionsRes, "releaseApp.readVersion");
-      const body = await versionsRes.json();
-      const version2 = body.versions?.find((candidate) => candidate.id === versionId);
-      if (!version2) {
-        throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+    const appPath = `/api/apps/${encodeURIComponent(appId)}`;
+    const versionPath = `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`;
+    async function readVersion(preflight = false, signal) {
+      const query2 = preflight ? `?releasePreflightFor=${encodeURIComponent(versionId)}` : "";
+      const response = await auth.authedFetch(`${appPath}/versions${query2}`, { signal });
+      await assertReleaseResponse(response, preflight ? "releaseApp.checkPermissions" : "releaseApp.readVersion");
+      const body = await response.json();
+      const row = body.versions?.find((v) => v.id === versionId);
+      if (!row)
+        throw new Error(`Version ${versionId} was not found in app ${appId}.`);
+      if (String(row.version_type ?? row.versionType).toLowerCase() === "branch") {
+        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select it for release.");
       }
-      if (String(version2.version_type ?? version2.versionType).toLowerCase() === "branch") {
-        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.");
+      if (row.status !== "PUBLISHED" && row.status !== "DRAFT") {
+        throw new Error("Cannot verify whether the selected version is saved.");
       }
       return {
-        id: versionId,
-        ...typeof version2.status === "string" ? { status: version2.status } : {},
-        ...typeof version2.current_environment_id === "string" ? { currentEnvironmentId: version2.current_environment_id } : typeof version2.currentEnvironmentId === "string" ? { currentEnvironmentId: version2.currentEnvironmentId } : {}
+        status: row.status,
+        environmentId: row.current_environment_id ?? row.currentEnvironmentId,
+        plan: body.release_preflight
       };
-    };
-    let version = await readVersion();
-    let publishedForRelease = false;
-    const promotedToEnvironments = [];
-    const restoreDraftAfterDeniedRelease = async (response, operation) => {
-      const errorText = await response.clone().text();
-      let restored = false;
-      if (publishedForRelease && (response.status === 401 || response.status === 403)) {
-        const restoreRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "DRAFT" })
-        });
-        restored = restoreRes.ok;
-      }
-      const draftState = publishedForRelease ? restored ? " The draft was restored after the permission denial." : " The draft may already be published; ask an app releaser to continue." : "";
-      throw new Error(`ToolJet ${operation} failed (${response.status}): ${errorText}${draftState}`);
-    };
-    if (version.status === "DRAFT") {
-      const publishRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "PUBLISHED" })
-      });
-      await assertOk(publishRes, "releaseApp.publishVersion");
-      publishedForRelease = true;
-      version = { ...version, status: "PUBLISHED" };
     }
-    const releaseOnce = () => auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/release`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ versionToBeReleased: versionId })
-    });
-    let releaseRes = await releaseOnce();
-    if (!releaseRes.ok) {
-      const releaseError = await releaseRes.clone().text();
-      const promotionRequired = releaseRes.status === 400 && /only release when the version is promoted to production/i.test(releaseError);
-      if (!promotionRequired) {
-        if (releaseRes.status === 401 || releaseRes.status === 403) {
-          await restoreDraftAfterDeniedRelease(releaseRes, "releaseApp");
+    class SavedBuildScanRequired extends Error {
+    }
+    async function assertReleaseResponse(response, action) {
+      if (response.status === 403) {
+        const refusal = await response.clone().json().catch(() => null);
+        if (refusal?.reason === "saved_build_scan_required" && action === "releaseApp.checkPermissions") {
+          throw new SavedBuildScanRequired("The saved build needs a completed security scan. Check the Security panel.");
         }
-        const prepared = publishedForRelease ? " The draft was already published; retry release instead of editing it." : "";
-        throw new Error(`ToolJet releaseApp failed (${releaseRes.status}): ${releaseError}${prepared}`);
+        if (refusal?.reason === "security_gate" && typeof refusal.message === "string" && refusal.message.trim()) {
+          throw new Error(refusal.message);
+        }
       }
-      const environmentsRes = await auth.authedFetch(`/api/app-environments?app_id=${encodeURIComponent(appId)}`);
-      await assertOk(environmentsRes, "releaseApp.listEnvironments");
-      const environmentsBody = await environmentsRes.json();
-      const environments = (environmentsBody.environments ?? []).flatMap((environment) => {
-        if (typeof environment.id !== "string" || typeof environment.name !== "string")
-          return [];
-        return [{
-          id: environment.id,
-          name: environment.name,
-          isDefault: environment.default === true || environment.is_default === true || environment.isDefault === true,
-          ...typeof environment.priority === "number" ? { priority: environment.priority } : {}
-        }];
+      await assertOk(response, action);
+    }
+    async function readPlan(signal) {
+      const version = await readVersion(true, signal);
+      const plan = external_exports.object({
+        version_id: external_exports.literal(versionId),
+        environment_path: external_exports.array(external_exports.object({ id: external_exports.string().min(1), name: external_exports.string().min(1) })).min(1)
+      }).safeParse(version.plan);
+      if (!plan.success) {
+        throw new Error("ToolJet could not confirm release permissions. Use the version menu or update the ToolJet server to a version with release preflight support.");
+      }
+      const path2 = plan.data.environment_path;
+      if (path2[0].id !== version.environmentId || new Set(path2.map((env) => env.id)).size !== path2.length) {
+        throw new Error("Cannot verify the release path from the selected environment.");
+      }
+      return { ...version, path: path2 };
+    }
+    async function readPlanAfterSave() {
+      const controller = new AbortController();
+      let timeoutError = new Error("Timed out checking the saved release plan.");
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort(timeoutError);
+          reject(timeoutError);
+        }, 3e4);
       });
-      for (let attempts = 0; attempts <= environments.length; attempts++) {
-        const currentEnvironment = environments.find((environment) => environment.id === version.currentEnvironmentId);
-        if (!currentEnvironment) {
-          throw new Error(`ToolJet releaseApp failed after publishing the version: version ${versionId} references unknown environment ${String(version.currentEnvironmentId)}. Retry release after checking its environment.`);
-        }
-        if (currentEnvironment.isDefault)
-          break;
-        if (attempts === environments.length) {
-          throw new Error(`ToolJet releaseApp failed after partial preparation: version ${versionId} did not reach production. Retry the same release to continue safely.`);
-        }
-        const promoteRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}/promote`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ currentEnvironmentId: currentEnvironment.id })
-        });
-        if (!promoteRes.ok) {
-          if (promoteRes.status === 401 || promoteRes.status === 403) {
-            await restoreDraftAfterDeniedRelease(promoteRes, "releaseApp promotion");
+      try {
+        for (; ; ) {
+          controller.signal.throwIfAborted();
+          try {
+            return await Promise.race([readPlan(controller.signal), timeout]);
+          } catch (error) {
+            controller.signal.throwIfAborted();
+            if (!(error instanceof SavedBuildScanRequired))
+              throw error;
+            timeoutError = error;
+            await Promise.race([new Promise((resolve2) => setTimeout(resolve2, 2e3)), timeout]);
           }
-          const promoteError = await promoteRes.clone().text();
-          throw new Error(`ToolJet releaseApp promotion from ${currentEnvironment.name} failed (${promoteRes.status}): ${promoteError}. The version may already be published or partly promoted; retry the same release.`);
         }
-        version = await readVersion();
-        const promotedEnvironment = environments.find((environment) => environment.id === version.currentEnvironmentId);
-        if (!promotedEnvironment || promotedEnvironment.id === currentEnvironment.id) {
-          throw new Error(`ToolJet releaseApp could not verify promotion from ${currentEnvironment.name} for version ${versionId}. Retry the same release to continue safely.`);
-        }
-        promotedToEnvironments.push(promotedEnvironment.name);
+      } finally {
+        clearTimeout(timer);
       }
-      releaseRes = await releaseOnce();
     }
-    await assertOk(releaseRes, "releaseApp");
-    const app = await getApp(appId);
-    const releasedId = app?.current_version_id ?? app?.currentVersionId;
-    if (releasedId !== versionId) {
-      throw new Error(`ToolJet releaseApp could not verify the release: expected current version ${versionId}, received ${String(releasedId)}. Read the app state before retrying.`);
-    }
-    return {
+    const initial = await readPlan();
+    const path = initial.path;
+    const destination = path[path.length - 1];
+    const publish = initial.status === "DRAFT";
+    const promoted = [];
+    let releasing = false;
+    const result = () => ({
       app_id: appId,
       version_id: versionId,
+      current_version_id: versionId,
       released: true,
-      current_version_id: releasedId,
-      ...version.currentEnvironmentId ? { current_environment_id: version.currentEnvironmentId } : {},
-      published_for_release: publishedForRelease,
-      promoted_to_environments: promotedToEnvironments
-    };
+      current_environment_id: destination.id,
+      published_for_release: publish,
+      promoted_to_environments: promoted
+    });
+    async function put(url, body, action) {
+      const response = await auth.authedFetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      await assertReleaseResponse(response, action);
+    }
+    try {
+      if (publish) {
+        await put(versionPath, { status: "PUBLISHED" }, "releaseApp.save");
+        const saved = await readPlanAfterSave();
+        if (saved.path.length !== path.length || saved.path.some((env, i) => env.id !== path[i].id)) {
+          throw new Error("The release path changed after saving. Check the version menu before retrying.");
+        }
+        if (saved.status !== "PUBLISHED" || saved.environmentId !== initial.environmentId) {
+          throw new Error("Could not verify the saved version in its original environment.");
+        }
+      }
+      for (let i = 1; i < path.length; i++) {
+        await put(`${versionPath}/promote`, { currentEnvironmentId: path[i - 1].id }, `releaseApp.promote to ${path[i].name}`);
+        const saved = await readVersion();
+        if (saved.environmentId !== path[i].id || saved.status !== "PUBLISHED") {
+          throw new Error(`Could not verify promotion to ${path[i].name}.`);
+        }
+        promoted.push(path[i].name);
+      }
+      releasing = true;
+      await put(`${appPath}/release`, { versionToBeReleased: versionId }, "releaseApp.release");
+    } catch (error) {
+      const lostResponse = error instanceof TypeError || error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+      if (releasing && lostResponse) {
+        const app2 = await getApp(appId).catch(() => void 0);
+        if ((app2?.current_version_id ?? app2?.currentVersionId) === versionId)
+          return result();
+        if (!app2 || !("current_version_id" in app2 || "currentVersionId" in app2)) {
+          throw new Error(`${String(error)}. Could not verify which version is live. Check the version menu before retrying.`);
+        }
+      }
+      const observed = await readVersion(false, AbortSignal.timeout(1e4)).catch(() => void 0);
+      const env = path.find((env2) => env2.id === observed?.environmentId);
+      if (!observed || !env) {
+        throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
+      }
+      if (error instanceof SavedBuildScanRequired && observed.status === "PUBLISHED") {
+        throw new ReleaseScanTimeout(env.name);
+      }
+      const nextAction = env.id === destination.id ? "release" : "promote";
+      let guidance = "You can continue editing this draft.";
+      if (observed.status === "PUBLISHED") {
+        const retry = lostResponse ? "Retry release_app" : "Resolve the reported issue, then retry release_app";
+        guidance = `${retry} from ${env.name}, or use the version menu to ${nextAction} it manually. Create a new draft to chat or edit.`;
+      }
+      throw new Error(`${String(error)}. The version is ${observed.status === "DRAFT" ? "a draft" : "saved"} in ${env.name}. ${guidance}`);
+    }
+    const app = await getApp(appId).catch(() => void 0);
+    if ((app?.current_version_id ?? app?.currentVersionId) !== versionId) {
+      throw new Error(`Could not verify that version ${versionId} is live. Check the version menu before retrying.`);
+    }
+    return result();
   }
   async function renameApp(appId, versionId, name) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
@@ -3272,6 +3315,11 @@ function createClient(auth, config) {
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "runpy") {
+      const message = runpyReturnError(params.options.code);
+      if (message)
+        throw new Error(message);
+    }
     if (query2.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
@@ -4160,580 +4208,9 @@ var themes = [
 function themeActionTools(source) {
   return exposeActions(source, themes);
 }
-createRequire(import.meta.url);
-var CODE_PAGE_TRUE = /* @__PURE__ */ new Set([true, "true", "{{true}}"]);
-function codeScreens(summary) {
-  const pageIds = new Set(summary.pages.map((page2) => page2.id));
-  const screens = [];
-  for (const page2 of summary.pages) {
-    for (const component of page2.components) {
-      const props = component.properties ?? {};
-      if (component.parent || !CODE_PAGE_TRUE.has(props.codePage?.value))
-        continue;
-      let routes = props.routes?.value;
-      if (typeof routes === "string") {
-        try {
-          routes = JSON.parse(routes);
-        } catch {
-          routes = [];
-        }
-      }
-      if (!Array.isArray(routes))
-        continue;
-      for (const route of routes) {
-        if (typeof route?.id !== "string" || typeof route?.path !== "string")
-          continue;
-        if (typeof route.pageId !== "string" || !pageIds.has(route.pageId))
-          continue;
-        screens.push({
-          route_id: route.id,
-          path: route.path,
-          ...typeof route.title === "string" ? { title: route.title } : {},
-          page_id: route.pageId,
-          code_page_id: page2.id
-        });
-      }
-    }
-  }
-  return screens;
-}
-function findScreen(summary, route) {
-  const screens = codeScreens(summary);
-  const screen = screens.find((s) => s.route_id === route) ?? screens.find((s) => s.path === route);
-  if (screen)
-    return screen;
-  throw new Error(`No Code mode screen "${route}" in app "${summary.app_id}". ` + (screens.length ? `Its screens: ${screens.map((s) => `${s.route_id} (${s.path})`).join(", ")}.` : "The app has no Code mode screens."));
-}
-function findQuery(summary, ref) {
-  const lower = ref.toLowerCase();
-  return summary.queries.find((q) => q.id === ref) ?? summary.queries.find((q) => q.name === ref) ?? summary.queries.find((q) => q.name?.toLowerCase() === lower);
-}
-function isCodeApp(summary) {
-  return summary.pages.some((page2) => page2.components.some((component) => {
-    const props = component.properties ?? {};
-    return !component.parent && CODE_PAGE_TRUE.has(props.codePage?.value);
-  }));
-}
-function findResource(summary, resourceType, resourceId) {
-  if (resourceType === "page") {
-    const page2 = summary.pages.find((candidate) => candidate.id === resourceId) ?? summary.pages.find((candidate) => candidate.name === resourceId);
-    if (page2)
-      return { type: resourceType, id: page2.id, name: page2.name };
-  } else if (resourceType === "query") {
-    const query2 = findQuery(summary, resourceId);
-    if (query2)
-      return { type: resourceType, id: query2.id, name: query2.name };
-  } else {
-    for (const page2 of summary.pages) {
-      const component = page2.components.find((candidate) => candidate.id === resourceId);
-      if (component) {
-        return {
-          type: resourceType,
-          id: component.id,
-          name: component.name,
-          component_type: component.type,
-          page_id: page2.id,
-          page_name: page2.name
-        };
-      }
-    }
-  }
-  throw new Error(`${resourceType} "${resourceId}" does not belong to app "${summary.app_id}". Use get_app_summary and do not guess resource ids.`);
-}
-function normalizePermission(permissions) {
-  const permission = permissions[0];
-  if (!permission)
-    return { access: "all", permission_id: null };
-  if (permission.type === "SINGLE") {
-    return {
-      access: "users",
-      permission_id: permission.id,
-      users: (Array.isArray(permission.users) ? permission.users : []).map((entry) => entry?.user).filter(Boolean).map((user) => ({
-        id: user.id,
-        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || void 0,
-        email: user.email
-      }))
-    };
-  }
-  if (permission.type === "GROUP") {
-    return {
-      access: "groups",
-      permission_id: permission.id,
-      groups: (Array.isArray(permission.groups) ? permission.groups : []).map((entry) => entry?.permissionGroup).filter(Boolean).map((group) => ({ id: group.id, name: group.name }))
-    };
-  }
-  return { access: String(permission.type ?? "unknown").toLowerCase(), permission_id: permission.id };
-}
-function planLimits(features) {
-  if (!features)
-    return void 0;
-  const known = Object.entries({
-    query_limits: features.appPermissionQuery,
-    screen_limits: features.appPermissionPages,
-    server_side_current_user: features.serverSideGlobalResolve
-  }).filter(([, value]) => typeof value === "boolean");
-  return known.length ? Object.fromEntries(known) : void 0;
-}
-async function subjectGroups(client, open) {
-  const openIds = new Map(open.map((group) => [group.id, group]));
-  let workspace;
-  try {
-    workspace = await client.listWorkspaceGroups();
-  } catch {
-    workspace = void 0;
-  }
-  if (!workspace) {
-    return {
-      groups: open.map((group) => ({ ...group, can_open_app: true })),
-      complete: false
-    };
-  }
-  const groups = workspace.map((group) => ({
-    id: group.id,
-    name: group.name,
-    type: group.type,
-    ...typeof openIds.get(group.id)?.count === "number" ? { count: openIds.get(group.id).count } : {},
-    can_open_app: openIds.has(group.id),
-    ...group.disabled ? { disabled: true } : {}
-  }));
-  for (const group of open)
-    if (!groups.some((known) => known.id === group.id))
-      groups.push({ ...group, can_open_app: true });
-  return { groups, complete: true };
-}
-function viewRule(appId, appName, groupId) {
-  return {
-    name: `${(appName || "App").slice(0, 40)} (view)`,
-    type: "app",
-    groupId,
-    isAll: false,
-    createResourcePermissionObject: {
-      canEdit: false,
-      canView: true,
-      hideFromDashboard: false,
-      canAccessDevelopment: false,
-      canAccessStaging: false,
-      canAccessProduction: false,
-      canAccessReleased: true,
-      resourcesToAdd: [{ appId }]
-    }
-  };
-}
-async function groupDirectory(client, appId) {
-  const subjects = await client.listAppPermissionSubjects(appId);
-  const { groups, complete } = await subjectGroups(client, subjects.groups);
-  return { groups, complete, openIds: new Set(subjects.groups.map((group) => group.id)) };
-}
-function resolveGroups(directory, refs) {
-  const ids = [];
-  const unknown = [];
-  for (const ref of refs) {
-    const lower = ref.toLowerCase();
-    const group = directory.groups.find((g) => g.id === ref) ?? directory.groups.find((g) => g.name === ref) ?? directory.groups.find((g) => g.name?.toLowerCase() === lower);
-    if (group)
-      ids.push(group.id);
-    else if (!directory.complete && UUID.test(ref))
-      ids.push(ref);
-    else
-      unknown.push(ref);
-  }
-  return { ids: [...new Set(ids)], unknown };
-}
-var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function groupsToGrant(directory, groupIds, grant) {
-  const missing = groupIds.filter((id2) => !directory.openIds.has(id2));
-  if (!missing.length)
-    return [];
-  const byId = new Map(directory.groups.map((group) => [group.id, group]));
-  const names = missing.map((id2) => byId.get(id2)?.name ?? id2);
-  if (!grant) {
-    throw new Error(`${names.join(", ")} cannot open this app yet, so a limit to ${missing.length > 1 ? "them" : "it"} would leave ${missing.length > 1 ? "their" : "its"} members without the screen or query. Pass grant_app_access: true to give each of them view access to this app only (the released app), or give them access in Workspace settings > Groups. Nothing was changed.`);
-  }
-  const disabled = missing.filter((id2) => byId.get(id2)?.disabled);
-  if (disabled.length) {
-    throw new Error(`${disabled.map((id2) => byId.get(id2)?.name ?? id2).join(", ")} cannot be changed under the current plan, so it cannot be given access to this app. Nothing was changed.`);
-  }
-  return missing;
-}
-async function removeGrants(client, appId, granted) {
-  const left = [];
-  for (const grant of granted) {
-    try {
-      const rules = await client.listWorkspaceGroupAccess(grant.group_id);
-      const added = rules.filter((rule) => rule.id && rule.name === grant.rule_name && rule.resources.some((r) => r.id === appId));
-      for (const rule of added)
-        await client.writeWorkspaceGroupAccess("DELETE", grant.group_id, "app", rule.id);
-    } catch {
-      left.push(grant.name ?? grant.group_id);
-    }
-  }
-  return left;
-}
-async function grantGroups(client, appId, appName, directory, missing) {
-  const byId = new Map(directory.groups.map((group) => [group.id, group]));
-  const granted = [];
-  const undo = async (reason) => {
-    const left = await removeGrants(client, appId, granted);
-    throw new Error(`${reason} The access rules added here were removed${left.length ? `, except for ${left.join(", ")} (remove it in Workspace settings > Groups)` : ""}.`);
-  };
-  for (const id2 of missing) {
-    const rule = viewRule(appId, appName, id2);
-    try {
-      await client.writeWorkspaceGroupAccess("POST", id2, "app", void 0, rule);
-    } catch (error) {
-      await undo(`${byId.get(id2)?.name ?? id2} could not be given access to this app: ${error.message}.`);
-    }
-    granted.push({ group_id: id2, ...byId.get(id2)?.name ? { name: byId.get(id2).name } : {}, rule_name: rule.name });
-  }
-  const after = new Set((await client.listAppPermissionSubjects(appId)).groups.map((group) => group.id));
-  const still = missing.filter((id2) => !after.has(id2));
-  if (still.length) {
-    await undo(`ToolJet did not confirm that ${still.map((id2) => byId.get(id2)?.name ?? id2).join(", ")} can open this app after the access rule was added.`);
-  }
-  return granted;
-}
-function resolveTargets(args, summary, problems) {
-  const targets = [];
-  const routes = [...args.route !== void 0 ? [args.route] : [], ...args.routes ?? []];
-  const queries = [...args.query !== void 0 ? [args.query] : [], ...args.queries ?? []];
-  const type = args.resource_type === "screen" ? "page" : args.resource_type;
-  if (routes.length && type && type !== "page") {
-    problems.push(`route names a Code mode screen (a page permission), so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
-  }
-  if (queries.length && type && type !== "query") {
-    problems.push(`query names a query, so resource_type "${args.resource_type}" does not fit: leave resource_type out.`);
-  }
-  for (const route of [...new Set(routes)]) {
-    try {
-      const screen = findScreen(summary, route);
-      targets.push({
-        resourceType: "page",
-        resourceId: screen.page_id,
-        resource: {
-          ...findResource(summary, "page", screen.page_id),
-          screen: { route_id: screen.route_id, path: screen.path, title: screen.title }
-        }
-      });
-    } catch (error) {
-      problems.push(error.message);
-    }
-  }
-  const unknownQueries = [];
-  for (const ref of [...new Set(queries)]) {
-    const query2 = findQuery(summary, ref);
-    if (!query2)
-      unknownQueries.push(ref);
-    else
-      targets.push({ resourceType: "query", resourceId: query2.id, resource: { type: "query", id: query2.id, name: query2.name } });
-  }
-  if (unknownQueries.length) {
-    const names = summary.queries.map((q) => q.name ?? q.id);
-    problems.push(`No query ${unknownQueries.map((q) => `"${q}"`).join(", ")} in this app. ` + (names.length ? `Its queries: ${names.join(", ")}.` : "The app has no queries."));
-  }
-  if (args.resource_id !== void 0) {
-    const kinds = type ? [type] : ["query", "page", "component"];
-    let found;
-    for (const kind of kinds) {
-      try {
-        found = { resourceType: kind, resourceId: "", resource: findResource(summary, kind, args.resource_id) };
-        found.resourceId = String(found.resource.id);
-        break;
-      } catch {
-      }
-    }
-    if (found)
-      targets.push(found);
-    else
-      problems.push(`resource_id "${args.resource_id}" is no ${type ?? "page, query or component"} of this app. Pass a query by its name with query, or a screen with route.`);
-  }
-  if (!routes.length && !queries.length && args.resource_id === void 0) {
-    const screens = codeScreens(summary);
-    problems.push("Name what to limit: route (or routes) for screens, query (or queries) for queries, by name or id." + (screens.length ? ` Screens: ${screens.map((s) => s.path).join(", ")}.` : "") + (summary.queries.length ? ` Queries: ${summary.queries.map((q) => q.name ?? q.id).join(", ")}.` : "") + // A build sent set with groups and grant_app_access but nothing to limit, four times over (2026-11-09).
-    (args.grant_app_access || args.groups?.length || args.group_ids?.length ? " There is no app-wide grant: a group gets into this app with the first screen or query limited to it (grant_app_access does that part). Everyone who can open the app already sees what is not limited, so when no screen or query should be limited, there is nothing to set." + (isCodeApp(summary) && !screens.length ? " Screens are listed here after code_app_install has saved the routes." : "") : ""));
-  }
-  const seen = /* @__PURE__ */ new Set();
-  return targets.filter((target) => {
-    const key = `${target.resourceType}:${target.resourceId}`;
-    if (seen.has(key))
-      return false;
-    seen.add(key);
-    return true;
-  });
-}
-function exampleCall(args, summary, codeApp) {
-  const example = { action: args.action === "get" ? "get" : args.action, app_id: args.app_id };
-  const screens = summary ? codeScreens(summary) : [];
-  if (args.routes?.length)
-    example.routes = args.routes;
-  else if (args.route)
-    example.route = args.route;
-  else if (args.queries?.length)
-    example.queries = args.queries;
-  else if (args.query)
-    example.query = args.query;
-  else if (screens.length)
-    example.route = screens[screens.length - 1].path;
-  else if (summary?.queries.length)
-    example.query = summary.queries[0].name ?? summary.queries[0].id;
-  else
-    example.route = "/finance";
-  if (args.action === "set") {
-    if (args.users?.length || args.user_ids?.length)
-      example.users = args.users ?? args.user_ids;
-    else
-      example.groups = args.groups ?? args.group_ids ?? ["Finance"];
-    if (!codeApp)
-      example.confirm = true;
-  }
-  if (args.action === "clear")
-    example.confirm = true;
-  return JSON.stringify(example);
-}
-function manageAppPermissionsTool(client) {
-  return {
-    name: "manage_app_permissions",
-    title: "Manage App Permissions",
-    // get/list_subjects only read, but set overwrites an access rule and clear broadens access to
-    // every user who can reach the app, so the hint covers its widest action.
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      openWorldHint: false
-    },
-    description: `Server-enforced access to an app's screens and queries: who can open a Code mode screen (route) or run a query. Example: {"action":"set","app_id":"<id>","route":"/finance","groups":["Finance"]}; for queries "query":"finance_queue" (name or id), and "routes" or "queries" take several at once with the same groups. groups take names or ids, users take emails or ids; access_type and resource_type are inferred. In a Code mode app, set needs no confirm, and a named group that cannot open the app first gets view access to this app only (grant_app_access defaults to true; false refuses instead). In other apps set needs confirm:true after the user approves the exact rule. clear (back to everyone who can open the app) always needs confirm:true. list_subjects: every workspace group with can_open_app, and plan (whether this plan enforces query and screen limits and resolves {{globals.server.currentUser}} on the server). list_screens: each route with its access. list_queries: each query of the app with its access. A screen limit hides the screen; the data it shows is protected only by limiting the queries that return it. Visual pages and components: resource_id (resource_type is optional). License gates apply.`,
-    inputSchema: {
-      action: external_exports.enum(["list_subjects", "list_screens", "list_queries", "get", "set", "clear"]),
-      app_id: external_exports.string().uuid(),
-      route: external_exports.string().min(1).max(200).optional().describe("A Code mode screen by route path or id (app.json routes)."),
-      routes: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(50).optional().describe("Several screens at once."),
-      query: external_exports.string().min(1).max(200).optional().describe("A query by name or id."),
-      queries: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Several queries at once."),
-      groups: external_exports.array(external_exports.string().min(1).max(200)).min(1).max(100).optional().describe("Group names or ids."),
-      users: external_exports.array(external_exports.string().min(1).max(320)).min(1).max(100).optional().describe("User emails or ids."),
-      resource_type: external_exports.enum(["page", "query", "component", "screen"]).optional().describe("Inferred; only needed with resource_id."),
-      resource_id: external_exports.string().min(1).max(200).optional(),
-      access_type: external_exports.enum(["users", "groups"]).optional().describe("Inferred from groups or users."),
-      user_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
-      group_ids: external_exports.array(external_exports.string().min(1)).min(1).max(100).optional(),
-      confirm: external_exports.boolean().optional(),
-      grant_app_access: external_exports.boolean().optional().describe("set with groups: give a group that cannot open the app view access to this app only first (default true in a Code mode app)")
-    },
-    async handler(args) {
-      try {
-        if (args.action === "list_subjects") {
-          const [subjects, features] = await Promise.all([
-            client.listAppPermissionSubjects(args.app_id),
-            client.getLicenseFeatureAccess().catch(() => void 0)
-          ]);
-          const { groups, complete } = await subjectGroups(client, subjects.groups);
-          const plan = planLimits(features);
-          return ok({
-            app_id: args.app_id,
-            users: subjects.users,
-            groups,
-            ...plan ? { plan } : {},
-            note: complete ? "A group with can_open_app false cannot open the app: a set naming it gives it view access to this app only first (in a Code mode app by default, elsewhere with grant_app_access:true)." : "Only the groups that can open the app are listed: the workspace group list could not be read."
-          });
-        }
-        if (args.action === "list_screens") {
-          const summary2 = await client.getAppSummary(args.app_id);
-          const screens = await Promise.all(codeScreens(summary2).map(async (screen) => ({
-            ...screen,
-            ...normalizePermission(await client.getAppPermission(args.app_id, "page", screen.page_id))
-          })));
-          return ok({ app_id: args.app_id, screens });
-        }
-        if (args.action === "list_queries") {
-          const summary2 = await client.getAppSummary(args.app_id);
-          const queries = await Promise.all(summary2.queries.map(async (q) => ({
-            query_id: q.id,
-            name: q.name,
-            ...normalizePermission(await client.getAppPermission(args.app_id, "query", q.id))
-          })));
-          return ok({ app_id: args.app_id, queries, limited: queries.filter((q) => q.access !== "all").length });
-        }
-        const summary = await client.getAppSummary(args.app_id);
-        const codeApp = isCodeApp(summary);
-        const problems = [];
-        const targets = resolveTargets(args, summary, problems);
-        let accessType;
-        let subjectIds = [];
-        let directory;
-        if (args.action === "set") {
-          const groupRefs = [...args.groups ?? [], ...args.group_ids ?? []];
-          const userRefs = [...args.users ?? [], ...args.user_ids ?? []];
-          if (groupRefs.length && userRefs.length) {
-            problems.push("Pass groups or users, not both: one limit is to groups or to named users.");
-          } else if (!groupRefs.length && !userRefs.length) {
-            problems.push("Name who keeps access: groups (names or ids) or users (emails or ids).");
-          } else {
-            accessType = groupRefs.length ? "groups" : "users";
-            if (args.access_type && args.access_type !== accessType) {
-              problems.push(`access_type "${args.access_type}" does not match the ${accessType} passed: leave access_type out.`);
-            }
-          }
-          if (accessType === "groups") {
-            directory = await groupDirectory(client, args.app_id);
-            const { ids, unknown } = resolveGroups(directory, groupRefs);
-            if (unknown.length) {
-              problems.push(`${unknown.map((g) => `"${g}"`).join(", ")} ${unknown.length > 1 ? "are not groups" : "is not a group"} of this workspace. Its groups: ${directory.groups.map((g) => g.name ?? g.id).join(", ")}.`);
-            }
-            subjectIds = ids;
-          } else if (accessType === "users") {
-            const users = (await client.listAppPermissionSubjects(args.app_id)).users;
-            const unknown = [];
-            for (const ref of userRefs) {
-              const lower = ref.toLowerCase();
-              const user = users.find((u) => u.id === ref) ?? users.find((u) => u.email?.toLowerCase() === lower);
-              if (user)
-                subjectIds.push(user.id);
-              else
-                unknown.push(ref);
-            }
-            if (unknown.length) {
-              problems.push(`${unknown.map((u) => `"${u}"`).join(", ")} cannot open this app or is not a user of this workspace (users must already have access to the app; list_subjects lists them).`);
-            }
-            subjectIds = [...new Set(subjectIds)];
-            if (args.grant_app_access === true) {
-              problems.push("grant_app_access applies only to a limit to groups: leave it out with users.");
-            }
-          }
-          if (!codeApp && args.confirm !== true) {
-            problems.push("set on this app needs confirm:true after the user explicitly approves the exact access rule.");
-          }
-        }
-        if (args.action === "clear" && args.confirm !== true) {
-          problems.push("clear opens the resource to everyone who can open the app, so it needs confirm:true after the user approves it.");
-        }
-        if (problems.length) {
-          throw new Error(`manage_app_permissions ${args.action} was refused and nothing was changed:
-` + problems.map((problem) => `- ${problem}`).join("\n") + `
-A call that works: ${exampleCall(args, summary, codeApp)}`);
-        }
-        const one = targets.length === 1;
-        if (args.action === "get") {
-          const results2 = await Promise.all(targets.map(async (t) => ({ resource: t.resource, ...normalizePermission(await client.getAppPermission(args.app_id, t.resourceType, t.resourceId)) })));
-          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
-        }
-        if (args.action === "clear") {
-          for (const t of targets)
-            await client.clearAppPermission(args.app_id, t.resourceType, t.resourceId);
-          const results2 = targets.map((t) => ({ resource: t.resource, access: "all", permission_id: null }));
-          return ok(one ? { app_id: args.app_id, ...results2[0] } : { app_id: args.app_id, results: results2 });
-        }
-        const grant = args.grant_app_access ?? codeApp;
-        const toGrant = accessType === "groups" ? groupsToGrant(directory, subjectIds, grant) : [];
-        const results = [];
-        for (const t of targets) {
-          try {
-            const permissions = await client.setAppPermission({
-              appId: args.app_id,
-              resourceType: t.resourceType,
-              resourceId: t.resourceId,
-              accessType,
-              subjectIds
-            });
-            results.push({ resource: t.resource, ...normalizePermission(permissions) });
-          } catch (error) {
-            results.push({ resource: t.resource, error: error.message });
-          }
-        }
-        const failed = results.filter((r) => r.error);
-        const failures = failed.map((r) => `${r.resource.name ?? r.resource.id}: ${r.error}`).join("; ");
-        if (failed.length === results.length) {
-          throw new Error(failures + (toGrant.length ? " No access to the app was given." : ""));
-        }
-        if (failed.length) {
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify({
-                error: `${failed.length} of ${results.length} limits were not set: ${failures}.` + (toGrant.length ? " No access to the app was given." : "") + " Set the failed ones again; the others are in place.",
-                app_id: args.app_id,
-                applied: results.filter((r) => !r.error),
-                failed
-              })
-            }],
-            isError: true
-          };
-        }
-        let granted = [];
-        if (toGrant.length) {
-          try {
-            granted = await grantGroups(client, args.app_id, summary.name, directory, toGrant);
-          } catch (error) {
-            throw new Error(`The limits were set, but their groups cannot open this app, so their members cannot use those screens or queries yet: ${error.message} Give the groups access in Workspace settings > Groups, or run this again.`);
-          }
-        }
-        const grantNote = granted.length ? `${granted.map((g) => g.name ?? g.group_id).join(", ")} could not open this app, so ${granted.length > 1 ? "each now has" : "it now has"} view access to this app only (released app, rule "${granted[0].rule_name}").` : void 0;
-        const body = {
-          app_id: args.app_id,
-          ...one ? results[0] : { results },
-          ...granted.length ? { granted_app_access: granted, note: grantNote } : {}
-        };
-        return ok(body);
-      } catch (error) {
-        return fail(error);
-      }
-    }
-  };
-}
-var appPermissions = [
-  {
-    action: "list_screens",
-    name: "list_app_permission_screens",
-    title: "List App Screen Permissions",
-    description: "Read the Code mode screens and their access restrictions for one app. Does not change access.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "list_queries",
-    name: "list_app_permission_queries",
-    title: "List App Query Permissions",
-    description: "Read the queries and their access restrictions for one app. Does not change access.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "list_subjects",
-    name: "list_app_permission_subjects",
-    title: "List App Permission Subjects",
-    description: "List users and groups eligible for resource access rules in one app. Subjects must already have app access. ToolJet permissions and license gates apply.",
-    required: ["app_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "get",
-    name: "get_app_resource_permission",
-    title: "Get App Resource Permission",
-    description: "Read server-enforced access for one page, query, or component belonging to the selected app. Use exact resource IDs from get_app_summary.",
-    required: ["app_id", "resource_type", "resource_id"],
-    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
-  },
-  {
-    action: "set",
-    name: "set_app_resource_permission",
-    title: "Set App Resource Permission",
-    description: "Replace access to one app page, query, or component with selected users or groups. Supply user_ids for access_type users or group_ids for groups, never both. Requires confirm:true after explicit approval of the exact rule; existing app access and license gates still apply.",
-    required: ["app_id", "resource_type", "resource_id", "access_type", "confirm"],
-    optional: ["user_ids", "group_ids"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  },
-  {
-    action: "clear",
-    name: "clear_app_resource_permission",
-    title: "Clear App Resource Permission",
-    description: "Remove a resource access restriction, broadening access to every user who can access the app. Requires confirm:true after explicit approval of this exact page, query, or component.",
-    required: ["app_id", "resource_type", "resource_id", "confirm"],
-    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
-  }
-];
-function appPermissionActionTools(source) {
-  return exposeActions(source, appPermissions);
-}
 export {
   PartialWriteError as P,
+  ReleaseScanTimeout as R,
   TOOLJET_DB_DATA_TYPES as T,
   WORKSPACE_ACCESS_KEYS as W,
   WORKSPACE_PERMISSION_KEYS as a,
@@ -4743,23 +4220,21 @@ export {
   currentBranchId as e,
   createClient as f,
   createAppTool as g,
-  manageThemeTool as h,
+  projectJavascriptRuntime as h,
   indexComponentReferences as i,
-  projectJavascriptRuntime as j,
-  projectAppSettings as k,
+  projectAppSettings as j,
+  compactTheme as k,
   literalCanvasColor as l,
-  manageAppPermissionsTool as m,
+  manageThemeTool as m,
   normalizeType as n,
-  compactTheme as o,
+  pageSettingProperties as o,
   packDefaultDefinition as p,
-  pageSettingProperties as q,
-  ToolJetHttpError as r,
-  appPermissionActionTools as s,
+  ToolJetHttpError as q,
+  workflowOperations as r,
+  withBranchContext as s,
   themeActionTools as t,
-  workflowOperations as u,
+  registerPackDefinitions as u,
   validateTableBatch as v,
   workspaceAccessKeys as w,
-  withBranchContext as x,
-  registerPackDefinitions as y,
-  branchIdFor as z
+  branchIdFor as x
 };
