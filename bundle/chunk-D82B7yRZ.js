@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { m as require_lib, p as packSlotsOfType, s as surfaceAroundResolver, n as lintSelectedRowProjections, o as lintOversizedWidths, q as lintHtmlContentHeight, t as lintHtmlRootSurface, u as lintUnguardedComponentRefs, v as lintEmbeddedBindingSyntax, w as lintChartDataShape, x as lintUnguardedSelectionText, y as resolvePackSlot, z as defaultPack, A as retiredUi2Name, B as lintTextFormat, C as lintTableColumnsShape, D as BARE_QUERY_DATA_BINDING, E as lintComponentStateBindings, F as lintEmptyDateWrites, G as lintUntriggeredDataQueries, H as lintAutomaticWrites, I as parseHtml, J as stripHtmlBindings } from "./chunk-BZWhmyFq.js";
-import { aC as external_exports, aD as packSlotOnOwnId, aE as internalComponentTypeNote, aF as emptyLibraryHostError, ay as isLibraryPackType, ax as getComponentSchema, aG as getCatalog, az as serverLibraryPacks, aH as getLegacyComponentReplacement, aI as packRowSlotNames, aJ as packSlotNames } from "./chunk-CS6hDtiZ.js";
-import { l as lintBindingNames, b as bindingSpans } from "./chunk-CgSLCcEW.js";
-import { p as parseExpression, a as parse } from "./chunk-BNro-MpC.js";
-import { e7 as __toESM } from "./chunk-BrqxMLVS.js";
+import { a as require_lib, p as packSlotsOfType, b as packSlotOnOwnId, s as surfaceAroundResolver, l as lintSelectedRowProjections, i as internalComponentTypeNote, e as emptyLibraryHostError, c as lintOversizedWidths, d as lintHtmlContentHeight, f as lintHtmlRootSurface, g as lintUnguardedComponentRefs, h as lintEmbeddedBindingSyntax, j as lintChartDataShape, k as lintUnguardedSelectionText, m as isLibraryPackType, n as resolvePackSlot, o as getComponentSchema, q as getCatalog, t as defaultPack, u as serverLibraryPacks, v as getLegacyComponentReplacement, w as retiredUi2Name, x as lintTextFormat, y as lintTableColumnsShape, B as BARE_QUERY_DATA_BINDING, z as lintComponentStateBindings, A as lintEmptyDateWrites, C as lintUntriggeredDataQueries, D as lintAutomaticWrites, E as packRowSlotNames, F as parseHtml, G as stripHtmlBindings, H as packSlotNames } from "./chunk-DoFIUO2V.js";
+import { l as lintBindingNames, b as bindingSpans } from "./chunk-oJ9NoDkD.js";
+import { p as parseExpression, a as parse } from "./chunk-tj2BrYhx.js";
+import { ax as external_exports } from "./chunk-BjPiAByC.js";
+import { e7 as __toESM } from "./chunk-BSIUjP8l.js";
 import { readFileSync } from "node:fs";
 createRequire(import.meta.url);
 var MAX_SLOT_ITEMS = 50;

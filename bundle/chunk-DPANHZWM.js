@@ -1,11 +1,11 @@
 import { createRequire } from "node:module";
-import { c as codeCliProblem } from "./chunk-BegdSxrn.js";
-import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, p as packDefaultDefinition, e as definition } from "./chunk-DsHerUO9.js";
-import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BrqxMLVS.js";
-import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-Z4CBDLNB.js";
-import { y as resolvePackSlot, O as resolveComponentLibrary, N as componentLibraryChoices, P as savedComponentLibrary, Q as checkedLibrarySelection, z as defaultPack, R as COMPONENT_PACK_DESCRIPTION } from "./chunk-BZWhmyFq.js";
-import { aC as external_exports, aQ as downgradeFlexForLibrary, aR as toLibraryComponent, aS as missingLibraryPins, aT as libraryTypeOf, aK as fail, aL as ok, aP as exposeActions } from "./chunk-CS6hDtiZ.js";
-import { a as assertPersistableQueryToggles, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-CgSLCcEW.js";
+import { c as codeCliProblem } from "./chunk-CroQHJzZ.js";
+import { h as hasNonEmptyDefinition, b as bodyParentId, i as isFlexContainerType, a as batchChildOrders, c as childOrderProperty, d as appendedChildOrders, p as packDefaultDefinition, e as definition } from "./chunk-B_QQ_yEu.js";
+import { e5 as tableQuotaError, ea as TableQuotaError } from "./chunk-BSIUjP8l.js";
+import { e as encodeComponentParent, d as decodeComponentParent, i as isPackContainerType, w as assertPageIcon, n as isMisplacedStyleKey } from "./chunk-D82B7yRZ.js";
+import { P as downgradeFlexForLibrary, n as resolvePackSlot, Q as resolveComponentLibrary, O as componentLibraryChoices, R as toLibraryComponent, S as missingLibraryPins, T as libraryTypeOf, U as savedComponentLibrary, V as checkedLibrarySelection, t as defaultPack, W as COMPONENT_PACK_DESCRIPTION } from "./chunk-DoFIUO2V.js";
+import { a as assertPersistableQueryToggles, r as runpyReturnError, c as normalizeWorkflowQueryOptions, d as assertWorkflowQueryOptions, w as workflowMappingMatches } from "./chunk-oJ9NoDkD.js";
+import { ax as external_exports, ay as fail, az as ok, aA as exposeActions } from "./chunk-BjPiAByC.js";
 import { randomUUID, createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync, existsSync } from "node:fs";
@@ -1582,6 +1582,13 @@ function condenseErrorBody(detail, limit = 600) {
   }
   return text.length > limit ? `${text.slice(0, limit)} \u2026[${text.length - limit} more chars]` : text;
 }
+var ReleaseScanTimeout = class extends Error {
+  environment;
+  constructor(environment) {
+    super(`The version was saved in ${environment}. The release stopped while waiting for the security scan. Once the Security panel shows it passed, retry the release with this saved version.`);
+    this.environment = environment;
+  }
+};
 var ToolJetHttpError = class extends Error {
   status;
   method;
@@ -1604,7 +1611,7 @@ function pageHiddenNeedsUpdate(page2, expected) {
 }
 async function assertOk(res, method) {
   if (!res.ok) {
-    const detail = await res.text();
+    const detail = await res.text().catch(() => res.statusText);
     if (method === "createTable" && res.status === 451)
       throw new TableQuotaError();
     throw new ToolJetHttpError(res.status, method, detail);
@@ -2351,125 +2358,159 @@ function createClient(auth, config) {
     };
   }
   async function releaseApp(appId, versionId) {
-    const readVersion = async () => {
-      const versionsRes = await auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/versions`);
-      await assertOk(versionsRes, "releaseApp.readVersion");
-      const body = await versionsRes.json();
-      const version2 = body.versions?.find((candidate) => candidate.id === versionId);
-      if (!version2) {
-        throw new Error(`ToolJet releaseApp failed: version ${versionId} was not found in app ${appId}.`);
+    const appPath = `/api/apps/${encodeURIComponent(appId)}`;
+    const versionPath = `/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`;
+    async function readVersion(preflight = false, signal) {
+      const query2 = preflight ? `?releasePreflightFor=${encodeURIComponent(versionId)}` : "";
+      const response = await auth.authedFetch(`${appPath}/versions${query2}`, { signal });
+      await assertReleaseResponse(response, preflight ? "releaseApp.checkPermissions" : "releaseApp.readVersion");
+      const body = await response.json();
+      const row = body.versions?.find((v) => v.id === versionId);
+      if (!row)
+        throw new Error(`Version ${versionId} was not found in app ${appId}.`);
+      if (String(row.version_type ?? row.versionType).toLowerCase() === "branch") {
+        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select it for release.");
       }
-      if (String(version2.version_type ?? version2.versionType).toLowerCase() === "branch") {
-        throw new Error("Cannot release a branch head. Save a named version in ToolJet, then select that exact version for release.");
+      if (row.status !== "PUBLISHED" && row.status !== "DRAFT") {
+        throw new Error("Cannot verify whether the selected version is saved.");
       }
       return {
-        id: versionId,
-        ...typeof version2.status === "string" ? { status: version2.status } : {},
-        ...typeof version2.current_environment_id === "string" ? { currentEnvironmentId: version2.current_environment_id } : typeof version2.currentEnvironmentId === "string" ? { currentEnvironmentId: version2.currentEnvironmentId } : {}
+        status: row.status,
+        environmentId: row.current_environment_id ?? row.currentEnvironmentId,
+        plan: body.release_preflight
       };
-    };
-    let version = await readVersion();
-    let publishedForRelease = false;
-    const promotedToEnvironments = [];
-    const restoreDraftAfterDeniedRelease = async (response, operation) => {
-      const errorText = await response.clone().text();
-      let restored = false;
-      if (publishedForRelease && (response.status === 401 || response.status === 403)) {
-        const restoreRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "DRAFT" })
-        });
-        restored = restoreRes.ok;
-      }
-      const draftState = publishedForRelease ? restored ? " The draft was restored after the permission denial." : " The draft may already be published; ask an app releaser to continue." : "";
-      throw new Error(`ToolJet ${operation} failed (${response.status}): ${errorText}${draftState}`);
-    };
-    if (version.status === "DRAFT") {
-      const publishRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "PUBLISHED" })
-      });
-      await assertOk(publishRes, "releaseApp.publishVersion");
-      publishedForRelease = true;
-      version = { ...version, status: "PUBLISHED" };
     }
-    const releaseOnce = () => auth.authedFetch(`/api/apps/${encodeURIComponent(appId)}/release`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ versionToBeReleased: versionId })
-    });
-    let releaseRes = await releaseOnce();
-    if (!releaseRes.ok) {
-      const releaseError = await releaseRes.clone().text();
-      const promotionRequired = releaseRes.status === 400 && /only release when the version is promoted to production/i.test(releaseError);
-      if (!promotionRequired) {
-        if (releaseRes.status === 401 || releaseRes.status === 403) {
-          await restoreDraftAfterDeniedRelease(releaseRes, "releaseApp");
+    class SavedBuildScanRequired extends Error {
+    }
+    async function assertReleaseResponse(response, action) {
+      if (response.status === 403) {
+        const refusal = await response.clone().json().catch(() => null);
+        if (refusal?.reason === "saved_build_scan_required" && action === "releaseApp.checkPermissions") {
+          throw new SavedBuildScanRequired("The saved build needs a completed security scan. Check the Security panel.");
         }
-        const prepared = publishedForRelease ? " The draft was already published; retry release instead of editing it." : "";
-        throw new Error(`ToolJet releaseApp failed (${releaseRes.status}): ${releaseError}${prepared}`);
+        if (refusal?.reason === "security_gate" && typeof refusal.message === "string" && refusal.message.trim()) {
+          throw new Error(refusal.message);
+        }
       }
-      const environmentsRes = await auth.authedFetch(`/api/app-environments?app_id=${encodeURIComponent(appId)}`);
-      await assertOk(environmentsRes, "releaseApp.listEnvironments");
-      const environmentsBody = await environmentsRes.json();
-      const environments = (environmentsBody.environments ?? []).flatMap((environment) => {
-        if (typeof environment.id !== "string" || typeof environment.name !== "string")
-          return [];
-        return [{
-          id: environment.id,
-          name: environment.name,
-          isDefault: environment.default === true || environment.is_default === true || environment.isDefault === true,
-          ...typeof environment.priority === "number" ? { priority: environment.priority } : {}
-        }];
+      await assertOk(response, action);
+    }
+    async function readPlan(signal) {
+      const version = await readVersion(true, signal);
+      const plan = external_exports.object({
+        version_id: external_exports.literal(versionId),
+        environment_path: external_exports.array(external_exports.object({ id: external_exports.string().min(1), name: external_exports.string().min(1) })).min(1)
+      }).safeParse(version.plan);
+      if (!plan.success) {
+        throw new Error("ToolJet could not confirm release permissions. Use the version menu or update the ToolJet server to a version with release preflight support.");
+      }
+      const path2 = plan.data.environment_path;
+      if (path2[0].id !== version.environmentId || new Set(path2.map((env2) => env2.id)).size !== path2.length) {
+        throw new Error("Cannot verify the release path from the selected environment.");
+      }
+      return { ...version, path: path2 };
+    }
+    async function readPlanAfterSave() {
+      const controller = new AbortController();
+      let timeoutError = new Error("Timed out checking the saved release plan.");
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort(timeoutError);
+          reject(timeoutError);
+        }, 3e4);
       });
-      for (let attempts = 0; attempts <= environments.length; attempts++) {
-        const currentEnvironment = environments.find((environment) => environment.id === version.currentEnvironmentId);
-        if (!currentEnvironment) {
-          throw new Error(`ToolJet releaseApp failed after publishing the version: version ${versionId} references unknown environment ${String(version.currentEnvironmentId)}. Retry release after checking its environment.`);
-        }
-        if (currentEnvironment.isDefault)
-          break;
-        if (attempts === environments.length) {
-          throw new Error(`ToolJet releaseApp failed after partial preparation: version ${versionId} did not reach production. Retry the same release to continue safely.`);
-        }
-        const promoteRes = await auth.authedFetch(`/api/v2/apps/${encodeURIComponent(appId)}/versions/${encodeURIComponent(versionId)}/promote`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ currentEnvironmentId: currentEnvironment.id })
-        });
-        if (!promoteRes.ok) {
-          if (promoteRes.status === 401 || promoteRes.status === 403) {
-            await restoreDraftAfterDeniedRelease(promoteRes, "releaseApp promotion");
+      try {
+        for (; ; ) {
+          controller.signal.throwIfAborted();
+          try {
+            return await Promise.race([readPlan(controller.signal), timeout]);
+          } catch (error) {
+            controller.signal.throwIfAborted();
+            if (!(error instanceof SavedBuildScanRequired))
+              throw error;
+            timeoutError = error;
+            await Promise.race([new Promise((resolve2) => setTimeout(resolve2, 2e3)), timeout]);
           }
-          const promoteError = await promoteRes.clone().text();
-          throw new Error(`ToolJet releaseApp promotion from ${currentEnvironment.name} failed (${promoteRes.status}): ${promoteError}. The version may already be published or partly promoted; retry the same release.`);
         }
-        version = await readVersion();
-        const promotedEnvironment = environments.find((environment) => environment.id === version.currentEnvironmentId);
-        if (!promotedEnvironment || promotedEnvironment.id === currentEnvironment.id) {
-          throw new Error(`ToolJet releaseApp could not verify promotion from ${currentEnvironment.name} for version ${versionId}. Retry the same release to continue safely.`);
-        }
-        promotedToEnvironments.push(promotedEnvironment.name);
+      } finally {
+        clearTimeout(timer);
       }
-      releaseRes = await releaseOnce();
     }
-    await assertOk(releaseRes, "releaseApp");
-    const app = await getApp(appId);
-    const releasedId = app?.current_version_id ?? app?.currentVersionId;
-    if (releasedId !== versionId) {
-      throw new Error(`ToolJet releaseApp could not verify the release: expected current version ${versionId}, received ${String(releasedId)}. Read the app state before retrying.`);
-    }
-    return {
+    const initial = await readPlan();
+    const path = initial.path;
+    const destination = path[path.length - 1];
+    const publish = initial.status === "DRAFT";
+    const promoted = [];
+    let releasing = false;
+    const result = () => ({
       app_id: appId,
       version_id: versionId,
+      current_version_id: versionId,
       released: true,
-      current_version_id: releasedId,
-      ...version.currentEnvironmentId ? { current_environment_id: version.currentEnvironmentId } : {},
-      published_for_release: publishedForRelease,
-      promoted_to_environments: promotedToEnvironments
-    };
+      current_environment_id: destination.id,
+      published_for_release: publish,
+      promoted_to_environments: promoted
+    });
+    async function put(url, body, action) {
+      const response = await auth.authedFetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      await assertReleaseResponse(response, action);
+    }
+    try {
+      if (publish) {
+        await put(versionPath, { status: "PUBLISHED" }, "releaseApp.save");
+        const saved = await readPlanAfterSave();
+        if (saved.path.length !== path.length || saved.path.some((env2, i) => env2.id !== path[i].id)) {
+          throw new Error("The release path changed after saving. Check the version menu before retrying.");
+        }
+        if (saved.status !== "PUBLISHED" || saved.environmentId !== initial.environmentId) {
+          throw new Error("Could not verify the saved version in its original environment.");
+        }
+      }
+      for (let i = 1; i < path.length; i++) {
+        await put(`${versionPath}/promote`, { currentEnvironmentId: path[i - 1].id }, `releaseApp.promote to ${path[i].name}`);
+        const saved = await readVersion();
+        if (saved.environmentId !== path[i].id || saved.status !== "PUBLISHED") {
+          throw new Error(`Could not verify promotion to ${path[i].name}.`);
+        }
+        promoted.push(path[i].name);
+      }
+      releasing = true;
+      await put(`${appPath}/release`, { versionToBeReleased: versionId }, "releaseApp.release");
+    } catch (error) {
+      const lostResponse = error instanceof TypeError || error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+      if (releasing && lostResponse) {
+        const app2 = await getApp(appId).catch(() => void 0);
+        if ((app2?.current_version_id ?? app2?.currentVersionId) === versionId)
+          return result();
+        if (!app2 || !("current_version_id" in app2 || "currentVersionId" in app2)) {
+          throw new Error(`${String(error)}. Could not verify which version is live. Check the version menu before retrying.`);
+        }
+      }
+      const observed = await readVersion(false, AbortSignal.timeout(1e4)).catch(() => void 0);
+      const env2 = path.find((env3) => env3.id === observed?.environmentId);
+      if (!observed || !env2) {
+        throw new Error(`${String(error)}. Could not verify the version's current state. Check the version menu before retrying.`);
+      }
+      if (error instanceof SavedBuildScanRequired && observed.status === "PUBLISHED") {
+        throw new ReleaseScanTimeout(env2.name);
+      }
+      const nextAction = env2.id === destination.id ? "release" : "promote";
+      let guidance = "You can continue editing this draft.";
+      if (observed.status === "PUBLISHED") {
+        const retry = lostResponse ? "Retry release_app" : "Resolve the reported issue, then retry release_app";
+        guidance = `${retry} from ${env2.name}, or use the version menu to ${nextAction} it manually. Create a new draft to chat or edit.`;
+      }
+      throw new Error(`${String(error)}. The version is ${observed.status === "DRAFT" ? "a draft" : "saved"} in ${env2.name}. ${guidance}`);
+    }
+    const app = await getApp(appId).catch(() => void 0);
+    if ((app?.current_version_id ?? app?.currentVersionId) !== versionId) {
+      throw new Error(`Could not verify that version ${versionId} is live. Check the version menu before retrying.`);
+    }
+    return result();
   }
   async function renameApp(appId, versionId, name) {
     const res = await auth.authedFetch(`/api/apps/${appId}`, {
@@ -3453,6 +3494,11 @@ function createClient(auth, config) {
   async function updateQuery(params) {
     assertPersistableQueryToggles(params.options, `ToolJet updateQuery refused query "${params.queryId}"`);
     const query2 = await assertQueryDatasourceAllowed(params.queryId, params.versionId);
+    if (query2.kind === "runpy") {
+      const message = runpyReturnError(params.options.code);
+      if (message)
+        throw new Error(message);
+    }
     if (query2.kind === "workflows") {
       params = { ...params, options: normalizeWorkflowQueryOptions(params.options) };
       params = { ...params, options: (await resolveWorkflowReference(auth, params.options, params.versionId)).options };
@@ -4345,6 +4391,7 @@ export {
   ALLOWED_API_ORIGINS_VAR as A,
   BASE_URL_HEADER as B,
   PartialWriteError as P,
+  ReleaseScanTimeout as R,
   SESSION_TOKEN_HEADER as S,
   TOOLJET_DB_DATA_TYPES as T,
   WORKSPACE_ACCESS_KEYS as W,
